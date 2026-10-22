@@ -75,9 +75,14 @@
     "service_history": "",
     "service_history_notes": "",
     "status_flags": [],
-    "special_offer": "SPOTICAR",
+    "special_offer": "",
     "category": "Stock",
-    "notes": [],
-    "updatedAt": "2026-10-22T19:53:53.933Z"
+    "notes": [
+      {
+        "date": "22/10/2026, 20:54:32",
+        "text": "SPOTICAR"
+      }
+    ],
+    "updatedAt": "2026-10-22T19:54:32.820Z"
   }
 }

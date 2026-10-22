@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Sync Dealer Stock Manager from Pentagon Burton Upon Trent public used-car stock."""
-import re
-import json
+"""Sync Dealer Stock from Pentagon Burton. Removed cars \u2192 Sold (kept in database)."""
+import re, json
 from html import unescape
 from datetime import date
 from urllib.request import Request, urlopen
@@ -18,18 +17,16 @@ URL = (
 
 def fix_make(m):
     m = m.replace('-', ' ').strip()
-    mapping = {
-        'ds': 'DS', 'byd': 'BYD', 'bmw': 'BMW', 'seat': 'SEAT',
-        'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz',
-    }
+    mapping = {'ds': 'DS', 'byd': 'BYD', 'bmw': 'BMW', 'seat': 'SEAT', 'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz'}
     return mapping.get(m.lower(), m.title())
 
-def fetch_and_parse():
-    req = Request(URL, headers={
-        'User-Agent': 'Mozilla/5.0 (compatible; DealerStockSync/1.0)',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': 'https://www.pentagon-group.co.uk/used-cars-in-burton',
-    })
+def natural_model_key(model):
+    m = model or ''
+    nums = re.findall(r'\d+', m)
+    return (0, int(nums[0]), m.lower()) if nums else (1, 0, m.lower())
+
+def fetch_live():
+    req = Request(URL, headers={'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.pentagon-group.co.uk/used-cars-in-burton'})
     html = unescape(urlopen(req, timeout=90).read().decode('utf-8', errors='replace'))
     blocks = re.findall(r'<li data-id="(\d+)"([^>]*)>(.*?)</li>', html, re.S)
     vehicles = []
@@ -41,67 +38,85 @@ def fetch_and_parse():
         parts = href.strip('/').split('/')
         make = fix_make(parts[1] if len(parts) > 1 else 'Unknown')
         model = (parts[2] if len(parts) > 2 else '').replace('-', ' ').title()
-        if model.lower().startswith('ds '):
-            model = 'DS ' + model[3:]
+        if model.lower().startswith('ds '): model = 'DS ' + model[3:]
         derivative = (parts[4] if len(parts) > 4 else parts[3] if len(parts) > 3 else '').replace('-', ' ')
         reg_m = re.search(r'used-vehicle-photos/\d+/([A-Z0-9]+)-', body)
-        if not reg_m:
-            continue
+        if not reg_m: continue
         reg = reg_m.group(1)
-        text = re.sub(r'<[^>]+>', ' ', body)
-        text = re.sub(r'\s+', ' ', text)
-        price_m = re.search(r'Our Price\s*£\s*([0-9,]+)|(?:^|[^\w])Price\s*£\s*([0-9,]+)', text)
-        price = None
-        if price_m:
-            price = float((price_m.group(1) or price_m.group(2)).replace(',', ''))
+        img_m = re.search(r'src="(https://pentagon-v4\.imgix\.net/used-vehicle-photos/1/[^"]+)"', body) or re.search(r'src="(https://pentagon-v4\.imgix\.net/used-vehicle-photos/\d+/[^"]+)"', body)
+        image_url = ''
+        if img_m:
+            image_url = img_m.group(1).split('&dpr=')[0]
+            if 'w=560' in image_url: image_url = image_url.replace('w=560', 'w=400').replace('h=421', 'h=300')
+        text = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', body))
+        price_m = re.search(r'Our Price\s*\xa3\s*([0-9,]+)|(?:^|[^\w])Price\s*\xa3\s*([0-9,]+)', text)
+        price = float((price_m.group(1) or price_m.group(2)).replace(',', '')) if price_m else None
         miles_m = re.search(r'([\d,]+)\s*miles', text, re.I)
         miles = int(miles_m.group(1).replace(',', '')) if miles_m else None
         year_m = re.search(r'\|\s*(20\d{2})\b', text)
         year = int(year_m.group(1)) if year_m else None
-        fuel = ''
-        ft = re.search(r'\b(Petrol|Diesel|Electric|Hybrid|Plug-?in Hybrid)\b', text, re.I)
-        if ft:
-            fuel = ft.group(1).title()
-        trans = ''
-        tr = re.search(r'\b(Manual|Automatic)\b', text, re.I)
-        if tr:
-            trans = tr.group(1).title()
-        body_type = ''
-        for b in ('Hatchback', 'Estate', 'Saloon', 'SUV', 'Coupe', 'Convertible', 'MPV'):
-            if b.lower() in href.lower() or b.lower() in text.lower():
-                body_type = b
-                break
-        doors = None
+        fuel = (re.search(r'\b(Petrol|Diesel|Electric|Hybrid|Plug-?in Hybrid)\b', text, re.I) or [None, ''])[1]
+        if fuel: fuel = fuel.title()
+        trans = (re.search(r'\b(Manual|Automatic)\b', text, re.I) or [None, ''])[1]
+        if trans: trans = trans.title()
+        body_type = next((b for b in ('Hatchback','Estate','Saloon','SUV','Coupe','Convertible','MPV') if b.lower() in href.lower() or b.lower() in text.lower()), '')
         dm = re.search(r'(\d)\s*dr', href, re.I)
-        if dm:
-            doors = int(dm.group(1))
-        vehicles.append({
-            'id': reg, 'registration': reg, 'make': make, 'model': model,
-            'derivative': derivative.title() if derivative else '', 'engine_cc': None,
-            'mileage': miles, 'doors': doors, 'transmission': trans, 'fuel': fuel,
-            'body_type': body_type, 'date_of_registration': '', 'model_year': year,
-            'num_owners': 1, 'colour': colour, 'chassis_number': '', 'engine_number': '',
-            'sales_manager': '', 'peg_number': vid, 'last_service_date': '', 'mot_expiry': '',
-            'previous_owner': '', 'service_history': '', 'service_history_notes': '',
-            'category': 'Stock', 'vat_qual': 'No', 'retail_price': price,
-            'bring_into_stock_date': date.today().isoformat(), 'special_offer': '',
-            'status_flags': [], 'accessories': [], 'notes': [], 'source': 'pentagon-burton',
-        })
-    seen = set()
-    unique = []
+        doors = int(dm.group(1)) if dm else None
+        vehicles.append({'id': reg, 'registration': reg, 'make': make, 'model': model, 'derivative': derivative.title() if derivative else '', 'mileage': miles, 'doors': doors, 'transmission': trans, 'fuel': fuel, 'body_type': body_type, 'model_year': year, 'colour': colour, 'category': 'Stock', 'retail_price': price, 'bring_into_stock_date': date.today().isoformat(), 'service_history': '', 'status_flags': [], 'notes': [], 'image_url': image_url, 'detail_url': ('https://www.pentagon-group.co.uk' + href) if href else '', 'source': 'pentagon-burton'})
+    seen, unique = set(), []
     for v in vehicles:
-        if v['registration'] in seen:
-            continue
-        seen.add(v['registration'])
-        unique.append(v)
-    unique.sort(key=lambda x: ((x['make'] or '').lower(), (x['model'] or '').lower(), x.get('retail_price') if x.get('retail_price') is not None else 999999999))
+        if v['registration'] in seen: continue
+        seen.add(v['registration']); unique.append(v)
     return unique
 
+def load_json(path, default):
+    p = DIR / path
+    if not p.exists(): return default
+    try: return json.loads(p.read_text())
+    except Exception: return default
+
+def apply_overrides(vehicle, overrides):
+    reg = vehicle.get('registration')
+    o = overrides.get(reg) or overrides.get(vehicle.get('id'))
+    if not o: return vehicle
+    for k in ('service_history', 'service_history_notes', 'notes', 'status_flags', 'special_offer'):
+        if o.get(k) is not None: vehicle[k] = o[k]
+    if o.get('category') and o['category'] not in ('Stock',) and vehicle.get('category') != 'Sold':
+        vehicle['category'] = o['category']
+    return vehicle
+
 def main():
-    vehicles = fetch_and_parse()
-    payload = json.dumps(vehicles, indent=2)
-    (DIR / 'vehicles.json').write_text(payload)
-    print(f'Synced {len(vehicles)} vehicles from Pentagon Burton')
+    live = fetch_live()
+    live_by_reg = {v['registration']: v for v in live}
+    previous = load_json('vehicles.json', [])
+    if isinstance(previous, dict): previous = previous.get('vehicles', [])
+    overrides = load_json('overrides.json', {})
+    result, sold_count = [], 0
+    prev_by_reg = {v['registration']: v for v in previous if v.get('registration')}
+    live_regs = set(live_by_reg.keys())
+    for reg, old in prev_by_reg.items():
+        if reg not in live_regs:
+            cat = old.get('category') or 'Stock'
+            if cat in ('Stock', 'Demonstrators', 'Pre-reg', 'Commercials', 'Arriving Soon'):
+                old['category'] = 'Sold'
+                old['sold_date'] = date.today().isoformat()
+                sold_count += 1
+            apply_overrides(old, overrides)
+            result.append(old)
+    for reg, v in live_by_reg.items():
+        if reg in prev_by_reg:
+            old = prev_by_reg[reg]
+            for k in ('notes', 'service_history', 'service_history_notes', 'status_flags', 'bring_into_stock_date'):
+                if old.get(k): v[k] = old[k]
+        apply_overrides(v, overrides)
+        result.append(v)
+    result.sort(key=lambda x: (0 if x.get('category') == 'Stock' else 1, (x.get('make') or '').lower(), natural_model_key(x.get('model') or ''), x.get('retail_price') if x.get('retail_price') is not None else 999999999))
+    (DIR / 'vehicles.json').write_text(json.dumps(result, separators=(',', ':')))
+    imgs = {v['registration']: v['image_url'] for v in result if v.get('image_url')}
+    (DIR / 'images_map.json').write_text(json.dumps(imgs, separators=(',', ':')))
+    stock_n = sum(1 for v in result if v.get('category') == 'Stock')
+    sold_n = sum(1 for v in result if v.get('category') == 'Sold')
+    print(f'Synced: {stock_n} in stock, {sold_n} sold (moved {sold_count} this run), total {len(result)}')
 
 if __name__ == '__main__':
     main()

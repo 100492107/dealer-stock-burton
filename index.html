@@ -99,6 +99,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .flags { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.3rem; }
 .flag { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; background: var(--bg-soft); color: var(--muted); font-weight: 600; }
 
+
+.filters-bar {
+  display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center;
+  margin-bottom: 1rem; padding: 0.75rem 0.9rem; background: var(--card);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.filters-bar label { font-size: 0.75rem; font-weight: 600; color: var(--muted); display: flex; flex-direction: column; gap: 0.2rem; }
+.filters-bar select, .filters-bar input {
+  padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.85rem; background: #fff; min-width: 110px; color: var(--text);
+}
+.filters-bar .filter-row { display: flex; gap: 0.4rem; align-items: flex-end; flex-wrap: wrap; }
+.badge-service {
+  display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem;
+  border-radius: 4px; margin-top: 0.25rem; letter-spacing: 0.02em;
+}
+.badge-fsh { background: #dcfce7; color: #166534; }
+.badge-mfr { background: #dbeafe; color: #1e40af; }
+.badge-part { background: #fef3c7; color: #92400e; }
+.badge-none { background: #f3f4f6; color: #6b7280; }
+
 .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
 
 .overlay { position: fixed; inset: 0; background: rgba(15,20,30,0.45); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem; overflow-y: auto; }
@@ -182,6 +203,40 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
       <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
     </div>
   </div>
+  
+  <div class="filters-bar" id="filtersBar">
+    <div class="filter-row">
+      <label>Fuel
+        <select id="filterFuel" onchange="renderList()">
+          <option value="">All fuels</option>
+          <option>Petrol</option>
+          <option>Diesel</option>
+          <option>Hybrid</option>
+          <option>Plug-in Hybrid</option>
+          <option>Electric</option>
+        </select>
+      </label>
+      <label>Min £
+        <input type="number" id="filterMinPrice" placeholder="0" min="0" step="100" onchange="renderList()" oninput="debounceRender()">
+      </label>
+      <label>Max £
+        <input type="number" id="filterMaxPrice" placeholder="Any" min="0" step="100" onchange="renderList()" oninput="debounceRender()">
+      </label>
+      <label>Sort by
+        <select id="sortBy" onchange="renderList()">
+          <option value="default">Brand / model / price</option>
+          <option value="price-asc">Price: low → high</option>
+          <option value="price-desc">Price: high → low</option>
+          <option value="mileage-asc">Mileage: low → high</option>
+          <option value="mileage-desc">Mileage: high → low</option>
+          <option value="year-desc">Year: newest</option>
+          <option value="year-asc">Year: oldest</option>
+        </select>
+      </label>
+      <button type="button" class="btn btn-secondary" onclick="clearFilters()" style="min-height:38px;margin-top:1.1rem">Clear filters</button>
+    </div>
+  </div>
+
   <div id="listArea"></div>
 </div>
 
@@ -287,6 +342,48 @@ const IMPORT_VERSION = 'pentagon-burton-live';
 let currentCat = 'Stock';
 let currentId = null;
 
+
+function serviceBadge(v) {
+  const s = (v.service_history || '').trim();
+  if (!s) return '';
+  let cls = 'badge-none', label = s;
+  const low = s.toLowerCase();
+  if (low.includes('full service') || low === 'fsh') { cls = 'badge-fsh'; label = 'FSH'; }
+  else if (low.includes('manufacturer')) { cls = 'badge-mfr'; label = 'Full manufacturer'; }
+  else if (low.includes('part')) { cls = 'badge-part'; label = 'Part service'; }
+  else if (low.includes('no history')) { cls = 'badge-none'; label = 'No history'; }
+  return `<span class="badge-service ${cls}">${label}</span>`;
+}
+
+let _debounceTimer;
+function debounceRender() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(renderList, 300);
+}
+
+function clearFilters() {
+  document.getElementById('filterFuel').value = '';
+  document.getElementById('filterMinPrice').value = '';
+  document.getElementById('filterMaxPrice').value = '';
+  document.getElementById('sortBy').value = 'default';
+  document.getElementById('searchInput').value = '';
+  renderList();
+}
+
+function setLastSynced(isoOrText) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (!isoOrText) return;
+  let text = isoOrText;
+  if (/^\d{4}-/.test(String(isoOrText)) || isoOrText instanceof Date) {
+    const d = new Date(isoOrText);
+    text = 'Synced ' + d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  }
+  el.textContent = text;
+  el.className = 'sync-status ok';
+}
+
+
 function setSyncStatus(text, cls) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
@@ -356,7 +453,6 @@ function groupVehicles(list) {
 }
 
 function cardHtml(v) {
-  const days = daysInStock(v);
   const flags = (v.status_flags || []).map(f => `<span class="flag">${f}</span>`).join('');
   const img = v.image_url
     ? `<img class="card-img" src="${v.image_url}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-img-placeholder',textContent:'No photo'}))">`
@@ -368,14 +464,18 @@ function cardHtml(v) {
       <div class="spec">${formatSpec(v.derivative || '')}</div>
       <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
       <div class="reg">${v.registration || ''}</div>
-      <div class="colour">${v.colour || ''}${days != null ? ' · ' + days + 'd' : ''}</div>
-      ${flags ? `<div class="flags">${flags}</div>` : ''}
+      <div class="colour">${v.colour || ''}</div>
+      ${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
     </div>
   </div>`;
 }
 
 function renderList() {
   const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const fuel = (document.getElementById('filterFuel') || {}).value || '';
+  const minP = parseFloat((document.getElementById('filterMinPrice') || {}).value);
+  const maxP = parseFloat((document.getElementById('filterMaxPrice') || {}).value);
+  const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
   let list = vehicles.filter(v => currentCat === 'All' || v.category === currentCat);
   if (q) {
     list = list.filter(v =>
@@ -386,11 +486,27 @@ function renderList() {
       (v.colour||'').toLowerCase().includes(q)
     );
   }
+  if (fuel) {
+    list = list.filter(v => (v.fuel || '').toLowerCase().includes(fuel.toLowerCase()));
+  }
+  if (!isNaN(minP)) list = list.filter(v => v.retail_price != null && v.retail_price >= minP);
+  if (!isNaN(maxP)) list = list.filter(v => v.retail_price != null && v.retail_price <= maxP);
+  if (sortBy === 'price-asc') list = list.slice().sort((a,b) => (a.retail_price||1e12) - (b.retail_price||1e12));
+  else if (sortBy === 'price-desc') list = list.slice().sort((a,b) => (b.retail_price||0) - (a.retail_price||0));
+  else if (sortBy === 'mileage-asc') list = list.slice().sort((a,b) => (a.mileage||1e12) - (b.mileage||1e12));
+  else if (sortBy === 'mileage-desc') list = list.slice().sort((a,b) => (b.mileage||0) - (a.mileage||0));
+  else if (sortBy === 'year-desc') list = list.slice().sort((a,b) => (b.model_year||0) - (a.model_year||0));
+  else if (sortBy === 'year-asc') list = list.slice().sort((a,b) => (a.model_year||0) - (b.model_year||0));
+
   document.getElementById('countLabel').textContent = '(' + list.length + ')';
   document.getElementById('pageTitle').childNodes[0].textContent = currentCat + ' ';
   const area = document.getElementById('listArea');
   if (!list.length) {
     area.innerHTML = '<div class="empty">No vehicles found.</div>';
+    return;
+  }
+  if (sortBy !== 'default') {
+    area.innerHTML = `<div class="vehicle-grid">${list.map(cardHtml).join('')}</div>`;
     return;
   }
   const grouped = groupVehicles(list);
@@ -417,7 +533,6 @@ function openDetail(id) {
   if (!v) return;
   currentId = id;
   document.getElementById('detailTitle').textContent = `${(v.make||'').toUpperCase()} ${(v.model||'').toUpperCase()} · ${v.registration||''}`;
-  const days = daysInStock(v);
   const photo = v.image_url
     ? `<div class="photo-box"><img src="${v.image_url}" alt=""></div>`
     : `<div class="photo-box"><div class="no-photo">No photo</div></div>`;
@@ -443,7 +558,7 @@ function openDetail(id) {
             <dt>Body</dt><dd>${v.body_type||'—'}</dd>
             <dt>Doors</dt><dd>${v.doors||'—'}</dd>
             <dt>Service</dt><dd>${v.service_history||'—'}</dd>
-            <dt>Days in stock</dt><dd>${days != null ? days : '—'}</dd>
+            
           </dl>
         </div>
         ${link}
@@ -654,7 +769,7 @@ async function loadFromVehiclesJson() {
     });
     localStorage.setItem('dealerStock', JSON.stringify(vehicles));
     localStorage.setItem('dealerStockVersion', IMPORT_VERSION);
-    setSyncStatus(vehicles.length + ' cars · live', 'ok');
+    setSyncStatus(vehicles.length + ' cars · synced ' + new Date().toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'}), 'ok');
     return true;
   } catch (e) {
     console.warn(e);

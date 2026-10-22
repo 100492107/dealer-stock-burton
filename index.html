@@ -34,9 +34,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .nav-right .sync-status { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; }
 .nav-right .sync-status.ok { color: #86efac; }
 .nav-right .sync-status.err { color: #fca5a5; }
-.nav-right button { background: var(--primary); color: #fff; border: none; padding: 0.4rem 0.85rem; border-radius: 5px; font-weight: 600; cursor: pointer; font-size: 0.82rem; }
+.nav-right button { background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 7px; font-weight: 600; cursor: pointer; font-size: 0.88rem; min-height: 38px; }
 .nav-right button:hover { background: var(--primary-h); }
 .nav-right .btn-ghost { background: transparent; border: 1px solid #3d4f66; color: #cbd5e1; }
+.nav-right .btn-ghost:hover { border-color: #7dd3fc; color: #fff; }
 .nav-right .btn-ghost:hover { background: rgba(255,255,255,0.08); }
 
 .container { max-width: 1280px; margin: 0 auto; padding: 1rem 1.1rem 2rem; }
@@ -45,11 +46,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .page-header .count { font-weight: 400; color: var(--muted); font-size: 0.9rem; }
 .search-box { display: flex; gap: 0.35rem; }
 .search-box input { padding: 0.45rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: min(280px, 70vw); font-size: 0.9rem; background: #fff; }
-.search-box button, .btn { padding: 0.45rem 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: none; cursor: pointer; }
-.btn-primary { background: var(--primary); color: #fff; }
+.search-box button, .btn {
+  padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+  border: none; cursor: pointer; min-height: 42px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.35rem; transition: background .15s, transform .1s, box-shadow .15s;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: 0 2px 6px rgba(26,86,168,.25); }
 .btn-primary:hover { background: var(--primary-h); }
-.btn-secondary { background: var(--bg-soft); color: var(--text); border: 1px solid var(--border); }
-.btn-danger { background: var(--danger); color: #fff; }
+.btn-secondary { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+.btn-secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
+.btn-danger { background: #fff; color: var(--danger); border: 1.5px solid #fca5a5; }
+.btn-danger:hover { background: #fef2f2; border-color: var(--danger); }
+.btn-lg { padding: 0.7rem 1.4rem; font-size: 1rem; min-height: 48px; min-width: 120px; }
+.modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.form-actions .btn { min-width: 110px; }
+.note-form .btn { flex-shrink: 0; min-width: 90px; }
 
 .make-section { margin-bottom: 1.5rem; }
 .make-title {
@@ -94,7 +106,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.15rem; border-bottom: 1px solid var(--border); }
 .modal-header h2 { font-size: 1.1rem; }
 .modal-body { padding: 1.15rem; }
-.modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); line-height: 1; }
+.modal-close { background: none; border: none; font-size: 1.6rem; cursor: pointer; color: var(--muted); line-height: 1; width: 42px; height: 42px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: var(--bg-soft); color: var(--text); }
 
 .detail-grid { display: grid; grid-template-columns: 1fr 260px; gap: 1.15rem; }
 @media (max-width: 720px) {
@@ -157,7 +170,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   <div class="nav-right">
     <span class="sync-status" id="syncStatus">Loading…</span>
     <button class="btn-ghost" onclick="location.reload()" title="Reload stock from server">↻ Refresh</button>
-    <button onclick="openForm()">+ Add</button>
+    <button type="button" onclick="openForm()">+ Add vehicle</button>
   </div>
 </nav>
 
@@ -166,7 +179,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
     <h1 id="pageTitle">Stock <span class="count" id="countLabel">(0)</span></h1>
     <div class="search-box">
       <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…">
-      <button class="btn-primary" onclick="renderList()">Search</button>
+      <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
     </div>
   </div>
   <div id="listArea"></div>
@@ -176,11 +189,11 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   <div class="modal">
     <div class="modal-header">
       <h2 id="detailTitle">Vehicle</h2>
-      <div style="display:flex;gap:0.45rem;align-items:center">
-        <button class="btn-secondary no-print" onclick="printStockCard()">Stock Card</button>
-        <button class="btn-primary no-print" onclick="editCurrent()">Edit</button>
-        <button class="btn-danger no-print" onclick="deleteCurrent()">Delete</button>
-        <button class="modal-close no-print" onclick="closeModal()">&times;</button>
+      <div class="modal-actions no-print">
+        <button type="button" class="btn btn-secondary" onclick="printStockCard()" title="Print stock card">🖨 Stock card</button>
+        <button type="button" class="btn btn-primary btn-lg" onclick="editCurrent()">✏️ Edit vehicle</button>
+        <button type="button" class="btn btn-danger" onclick="deleteCurrent()">Remove</button>
+        <button type="button" class="modal-close" onclick="closeModal()" title="Close" aria-label="Close">&times;</button>
       </div>
     </div>
     <div class="modal-body" id="detailBody"></div>
@@ -258,8 +271,8 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
           <div class="check-grid" id="statusFlags"></div>
         </fieldset>
         <div class="form-actions">
-          <button type="submit" class="btn-primary">Save</button>
-          <button type="button" class="btn-secondary" onclick="closeForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-lg">💾 Save changes</button>
+          <button type="button" class="btn btn-secondary btn-lg" onclick="closeForm()">Cancel</button>
         </div>
       </form>
     </div>
@@ -418,7 +431,7 @@ function openDetail(id) {
           <h3>Sales notes</h3>
           <div class="note-form no-print">
             <textarea id="newNoteText" placeholder="Add a note…"></textarea>
-            <button class="btn-primary" type="button" onclick="addNote()">Add</button>
+            <button class="btn btn-primary" type="button" onclick="addNote()">Add note</button>
           </div>
           <div id="notesList">${notes}</div>
         </div>

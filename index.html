@@ -585,11 +585,10 @@ async function loadFromVehiclesJson() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const list = await res.json();
     if (!Array.isArray(list) || !list.length) throw new Error('Empty');
-    const localNotes = {};
+    // Keep manual team data across stock refresh (notes / service history are NOT on the website)
+    const prevByReg = {};
     (vehicles || []).forEach(v => {
-      if (v.notes && v.notes.length) localNotes[v.registration] = v.notes;
-      if (v.status_flags && v.status_flags.length) localNotes[v.registration + '_flags'] = v.status_flags;
-      if (v.category && v.category !== 'Stock') localNotes[v.registration + '_cat'] = v.category;
+      if (v && v.registration) prevByReg[v.registration] = v;
     });
     let imgMap = {};
     try {
@@ -602,16 +601,21 @@ async function loadFromVehiclesJson() {
       if (or.ok) overrides = await or.json();
     } catch (_) {}
     vehicles = list.map(v => {
+      const prev = prevByReg[v.registration] || {};
       const o = overrides[v.registration] || overrides[v.id] || {};
-      if (o.notes) v.notes = o.notes;
-      else if (localNotes[v.registration]) v.notes = localNotes[v.registration];
-      if (o.status_flags) v.status_flags = o.status_flags;
-      else if (localNotes[v.registration + '_flags']) v.status_flags = localNotes[v.registration + '_flags'];
+      // Priority: shared overrides → previous session → scraped stock (usually empty for these fields)
+      v.notes = (o.notes != null ? o.notes : null) ?? (prev.notes || []) ;
+      v.service_history = (o.service_history != null ? o.service_history : null) ?? (prev.service_history || '');
+      v.service_history_notes = (o.service_history_notes != null ? o.service_history_notes : null) ?? (prev.service_history_notes || '');
+      v.status_flags = (o.status_flags != null ? o.status_flags : null) ?? (prev.status_flags || []);
+      v.special_offer = (o.special_offer != null ? o.special_offer : null) ?? (prev.special_offer || v.special_offer || '');
+      // Category: Sold/Delivered etc from overrides or previous, else scraped
       if (o.category) v.category = o.category;
-      else if (localNotes[v.registration + '_cat']) v.category = localNotes[v.registration + '_cat'];
-      if (o.service_history != null) v.service_history = o.service_history;
-      if (o.service_history_notes != null) v.service_history_notes = o.service_history_notes;
-      if (o.special_offer != null) v.special_offer = o.special_offer;
+      else if (prev.category && prev.category !== 'Stock' && v.category === 'Stock') {
+        // keep manual categories only if scrape still says Stock and we had something else
+        // (Sold is set by server sync when car leaves website)
+      }
+      if (prev.bring_into_stock_date && !v.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;
       if (!v.image_url && imgMap[v.registration]) v.image_url = imgMap[v.registration];
       return v;
     });

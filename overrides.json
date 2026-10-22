@@ -60,17 +60,15 @@
   "YE20UWP": {
     "service_history": "Full Service History",
     "service_history_notes": "TEST",
-    "status_flags": [
-      "Deposit Taken"
-    ],
+    "status_flags": [],
     "special_offer": "%",
-    "category": "Stock",
+    "category": "Sold",
     "notes": [
       {
         "date": "22/10/2026, 20:15:31",
         "text": "2 KEYS. PEG 23."
       }
     ],
-    "updatedAt": "2026-10-22T19:17:39.201Z"
+    "updatedAt": "2026-10-22T19:17:57.991Z"
   }
 }

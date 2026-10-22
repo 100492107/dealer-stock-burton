@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dealer Stock Manager</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --bg-soft: #1a222d;
+  --card: #1e2836;
+  --border: #2d3a4d;
+  --text: #e8eef6;
+  --muted: #8b9bb0;
+  --primary: #e8a317;
+  --primary-h: #f0b429;
+  --primary-dim: rgba(232, 163, 23, 0.15);
+  --danger: #ef4444;
+  --success: #22c55e;
+  --nav: #0a0e13;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.45; min-height: 100vh; }
+
+/* Nav */
+.top-nav { background: var(--nav); color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 1.25rem; height: 52px; position: sticky; top: 0; z-index: 50; border-bottom: 2px solid var(--primary); }
+.nav-links { display: flex; gap: 2px; flex-wrap: wrap; }
+.nav-links button { background: none; border: none; color: #8b9bb0; padding: 0.5rem 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 4px; cursor: pointer; }
+.nav-links button:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.nav-links button.active { color: #0a0e13; background: var(--primary); font-weight: 600; }
+.nav-right { display: flex; align-items: center; gap: 0.5rem; }
+.nav-right button { background: var(--primary); color: #0a0e13; border: none; padding: 0.4rem 0.9rem; border-radius: 5px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+.nav-right button:hover { background: var(--primary-h); }
+.nav-right .btn-ghost { background: transparent; border: 1px solid #3d4f66; color: #c5d0de; }
+.nav-right .btn-ghost:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: var(--primary); }
+.sync-status { font-size: 0.75rem; color: #8b9bb0; margin-right: 0.4rem; }
+.sync-status.ok { color: #4ade80; }
+.sync-status.err { color: #f87171; }
+.sync-status.pending { color: #fbbf24; }
+
+.container { max-width: 1300px; margin: 0 auto; padding: 1.25rem; }
+
+/* Header */
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+.page-header h1 { font-size: 1.45rem; color: var(--text); }
+.page-header .count { font-weight: 400; color: var(--muted); font-size: 0.95rem; }
+.search-box { display: flex; gap: 0.4rem; }
+.search-box input { padding: 0.45rem 0.8rem; border: 1px solid var(--border); border-radius: 6px; width: 260px; font-size: 0.9rem; background: var(--card); color: var(--text); }
+.search-box input::placeholder { color: var(--muted); }
+.search-box button, .btn { padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: none; cursor: pointer; }
+.btn-primary { background: var(--primary); color: #0a0e13; font-weight: 600; }
+.btn-primary:hover { background: var(--primary-h); }
+.btn-secondary { background: #2d3a4d; color: var(--text); }
+.btn-secondary:hover { background: #3d4f66; }
+.btn-danger { background: var(--danger); color: #fff; }
+
+/* Make sections */
+.make-section { margin-bottom: 1.75rem; }
+.make-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+  color: var(--primary);
+}
+.model-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 1.1rem 0 0.55rem;
+  padding: 0.4rem 0.7rem;
+  background: var(--bg-soft);
+  border-radius: 5px;
+  border-left: 3px solid var(--primary);
+}
+.model-title .model-count { font-weight: 400; color: var(--muted); font-size: 0.85rem; letter-spacing: 0; text-transform: none; }
+.make-section .vehicle-grid { margin-bottom: 0.75rem; }
+
+.vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
+.vehicle-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; cursor: pointer; transition: box-shadow .15s, transform .15s, border-color .15s; display: flex; flex-direction: column; gap: 0.3rem; }
+.vehicle-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.35); transform: translateY(-2px); border-color: var(--primary); }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; }
+.card-top .model { font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.card-top .price { font-weight: 700; color: var(--primary); }
+.spec { font-size: 0.8rem; color: var(--muted); }
+.meta { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); }
+.reg { font-weight: 600; letter-spacing: 0.4px; margin-top: 0.2rem; color: #fff; }
+.colour { font-size: 0.78rem; color: var(--muted); }
+.days { font-size: 0.72rem; color: var(--muted); }
+.flags { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.3rem; }
+.flag { font-size: 0.68rem; padding: 0.12rem 0.35rem; border-radius: 3px; background: #2d3a4d; color: #c5d0de; font-weight: 500; }
+.flag-pre-reg { background: #1e3a5f; color: #93c5fd; }
+.flag-lower-price { background: #4c1d1d; color: #fca5a5; }
+.flag-special-offer { background: #4a3a0a; color: #fde68a; }
+.flag-awaiting-prep { background: #1e1b4b; color: #c4b5fd; }
+.flag-bodyshop { background: #4a1942; color: #f9a8d4; }
+.flag-workshop { background: #2e1065; color: #ddd6fe; }
+.flag-on-loan { background: #134e4a; color: #99f6e4; }
+.flag-auction { background: #334155; color: #cbd5e1; }
+.flag-deposit-taken { background: #14532d; color: #86efac; }
+
+.empty { text-align: center; padding: 3.5rem 1rem; color: var(--muted); }
+
+/* Modal / Detail / Form */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; overflow-y: auto; }
+.modal { background: var(--card); border-radius: 10px; width: 100%; max-width: 900px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid var(--border); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+.modal-header h2 { font-size: 1.15rem; color: var(--text); }
+.modal-body { padding: 1.25rem; }
+.modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); line-height: 1; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 280px; gap: 1.25rem; }
+@media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+.photo-box { background: var(--bg-soft); height: 180px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-weight: 500; margin-bottom: 1rem; border: 1px solid var(--border); }
+.price-lg { font-size: 1.8rem; font-weight: 700; color: var(--primary); margin: 0.6rem 0; }
+.special { display: inline-block; background: var(--primary-dim); color: var(--primary); padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; border: 1px solid var(--primary); }
+.info-box { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 0.9rem; }
+.info-box h3 { font-size: 0.85rem; margin-bottom: 0.6rem; color: var(--muted); }
+.info-box dl { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.8rem; font-size: 0.82rem; }
+.info-box dt { color: var(--muted); }
+.info-box dd { font-weight: 500; color: var(--text); }
+.acc-list { list-style: none; font-size: 0.82rem; }
+.acc-list li { margin-bottom: 0.2rem; }
+
+.notes-area { margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 1.1rem; }
+.notes-area h3 { margin-bottom: 0.7rem; font-size: 0.95rem; }
+.note-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.note-form textarea { flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.85rem; resize: vertical; min-height: 60px; background: var(--bg-soft); color: var(--text); }
+.note-item { background: var(--bg-soft); border-left: 3px solid var(--primary); padding: 0.6rem 0.9rem; border-radius: 0 6px 6px 0; margin-bottom: 0.5rem; }
+.note-date { font-size: 0.72rem; color: var(--muted); }
+.note-text { font-size: 0.85rem; white-space: pre-wrap; }
+
+/* Form */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+.form-row { margin-bottom: 0.8rem; }
+.form-row label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--muted); margin-bottom: 0.25rem; }
+.form-row input, .form-row select, .form-row textarea { width: 100%; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 5px; font-size: 0.88rem; font-family: inherit; background: var(--bg-soft); color: var(--text); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+.three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.7rem; }
+fieldset { border: 1px solid var(--border); border-radius: 7px; padding: 0.8rem 1rem; margin: 1rem 0; }
+legend { font-size: 0.85rem; font-weight: 600; padding: 0 0.3rem; }
+.check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.3rem 0.8rem; margin-top: 0.4rem; }
+.check-grid label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer; }
+.form-actions { display: flex; gap: 0.6rem; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+/* Stock card print */
+@media print {
+  .top-nav, .no-print, .overlay { display: none !important; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="nav-links" id="navLinks">
+    <button data-cat="Stock" class="active">Stock</button>
+    <button data-cat="Demonstrators">Demonstrators</button>
+    <button data-cat="Pre-reg">Pre-reg</button>
+    <button data-cat="Commercials">Commercials</button>
+    <button data-cat="Arriving Soon">Arriving Soon</button>
+    <button data-cat="Sold">Sold</button>
+    <button data-cat="Delivered">Delivered</button>
+    <button data-cat="All">All</button>
+  </div>
+  <div class="nav-right">
+    <span class="sync-status" id="syncStatus">Local only</span>
+    <button class="btn-ghost" onclick="openCloudSettings()" title="Cloud sync settings">☁ Sync</button>
+    <button onclick="openForm()">+ Add Vehicle</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1 id="pageTitle">Stock <span class="count" id="countLabel">(0)</span></h1>
+    <div class="search-box">
+      <input type="search" id="searchInput" placeholder="Search reg, make, model, colour...">
+      <button class="btn-primary" onclick="renderList()">Search</button>
+    </div>
+  </div>
+  <div id="listArea"></div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detailModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="detailTitle">Vehicle</h2>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <button class="btn-secondary no-print" onclick="printStockCard()">Stock Card</button>
+        <button class="btn-primary no-print" onclick="editCurrent()">Edit</button>
+        <button class="btn-danger no-print" onclick="deleteCurrent()">Delete</button>
+        <button class="modal-close no-print" onclick="closeModal()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<!-- Form Modal -->
+<div class="overlay" id="formModal" style="display:none">
+  <div class="modal" style="max-width:950px">
+    <div class="modal-header">
+      <h2 id="formTitle">Add Vehicle</h2>
+      <button class="modal-close" onclick="closeForm()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="vehicleForm" onsubmit="saveVehicle(event)">
+        <input type="hidden" id="f_id">
+        <div class="form-grid">
+          <div>
+            <div class="form-row">
+              <label>Registration *</label>
+              <div style="display:flex;gap:0.4rem">
+                <input id="f_registration" required style="text-transform:uppercase;flex:1" placeholder="e.g. AB12 CDE">
+                <button type="button" class="btn-primary" id="lookupBtn" onclick="lookupReg()" style="white-space:nowrap">Lookup</button>
+              </div>
+              <div id="lookupStatus" style="font-size:0.78rem;margin-top:0.3rem;color:var(--muted)"></div>
+            </div>
+            <div class="form-row two">
+              <div><label>Make *</label><input id="f_make" required></div>
+              <div><label>Model *</label><input id="f_model" required></div>
+            </div>
+            <div class="form-row"><label>Derivative</label><input id="f_derivative" placeholder="e.g. 1.4 A1 Sportback TFSI Sport 5Dr"></div>
+            <div class="form-row three">
+              <div><label>Engine CC</label><input type="number" id="f_engine_cc"></div>
+              <div><label>Mileage</label><input type="number" id="f_mileage"></div>
+              <div><label>Doors</label><input type="number" id="f_doors"></div>
+            </div>
+            <div class="form-row three">
+              <div><label>Transmission</label>
+                <select id="f_transmission"><option value="">–</option><option>Manual</option><option>Automatic</option><option>Semi-Auto</option><option>CVT</option></select>
+              </div>
+              <div><label>Fuel</label>
+                <select id="f_fuel"><option value="">–</option><option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Plug-in Hybrid</option><option>Electric</option></select>
+              </div>
+              <div><label>Body Type</label>
+                <select id="f_body_type"><option value="">–</option><option>Hatchback</option><option>Saloon</option><option>Estate</option><option>SUV</option><option>Coupe</option><option>Convertible</option><option>MPV</option><option>Van</option></select>
+              </div>
+            </div>
+            <div class="form-row three">
+              <div><label>Date of Registration</label><input type="date" id="f_date_of_registration"></div>
+              <div><label>Model Year</label><input type="number" id="f_model_year" min="1990" max="2030"></div>
+              <div><label>No. of Owners</label><input type="number" id="f_num_owners" value="1" min="0"></div>
+            </div>
+            <div class="form-row"><label>Colour</label><input id="f_colour"></div>
+          </div>
+          <div>
+            <div class="form-row two">
+              <div><label>Chassis Number</label><input id="f_chassis_number"></div>
+              <div><label>Engine Number</label><input id="f_engine_number"></div>
+            </div>
+            <div class="form-row two">
+              <div><label>Sales Manager</label><input id="f_sales_manager"></div>
+              <div><label>Peg Number</label><input id="f_peg_number"></div>
+            </div>
+            <div class="form-row two">
+              <div><label>Last Service Date</label><input type="date" id="f_last_service_date"></div>
+              <div><label>MOT Expiry</label><input type="date" id="f_mot_expiry"></div>
+            </div>
+            <div class="form-row"><label>Previous Owner</label><input id="f_previous_owner"></div>
+            <div class="form-row">
+              <label>Service History</label>
+              <select id="f_service_history">
+                <option value="">–</option>
+                <option value="Full Service History">Full Service History (FSH)</option>
+                <option value="Full Manufacturer">Full Manufacturer</option>
+                <option value="Part Service">Part Service</option>
+                <option value="No History">No History</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Service History Notes</label><input id="f_service_history_notes" placeholder="e.g. 5 stamps, last at 41k"></div>
+            <div class="form-row two">
+              <div><label>Category</label>
+                <select id="f_category">
+                  <option>Stock</option><option>Demonstrators</option><option>Pre-reg</option><option>Commercials</option>
+                  <option>Arriving Soon</option><option>Sold</option><option>Delivered</option>
+                </select>
+              </div>
+              <div><label>VAT Qualifying</label>
+                <select id="f_vat_qual"><option>No</option><option>Yes</option></select>
+              </div>
+            </div>
+            <div class="form-row two">
+              <div><label>Retail Price (£)</label><input type="number" step="0.01" id="f_retail_price"></div>
+              <div><label>Bring into Stock Date</label><input type="date" id="f_bring_into_stock_date"></div>
+            </div>
+            <div class="form-row"><label>Special Offer text</label><input id="f_special_offer" placeholder="e.g. PREPPED AND READY"></div>
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Status Flags</legend>
+          <div class="check-grid" id="statusFlags"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Accessories</legend>
+          <div class="check-grid" id="accessoriesList"></div>
+        </fieldset>
+
+        <div class="form-row">
+          <label>Add Sales Note (optional)</label>
+          <textarea id="f_new_note" rows="2" placeholder="Any notes..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Save Vehicle</button>
+          <button type="button" class="btn-secondary" onclick="closeForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Cloud Sync Settings -->
+<div class="overlay" id="cloudModal" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h2>Cloud Sync Setup</h2>
+      <button class="modal-close" onclick="closeCloudSettings()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.9rem;margin-bottom:1rem;color:var(--muted)">
+        Free shared storage so the same stock appears on every device.
+        Takes about 2 minutes.
+      </p>
+      <ol style="font-size:0.88rem;margin:0 0 1.2rem 1.2rem;line-height:1.6;color:#334155">
+        <li>Go to <a href="https://jsonbin.io" target="_blank" rel="noopener">jsonbin.io</a> and create a free account</li>
+        <li>Click <strong>Create Bin</strong>, paste <code>[]</code> as the content, save</li>
+        <li>Copy the <strong>Bin ID</strong> from the URL or bin details</li>
+        <li>Open <strong>API Keys</strong> and copy your <strong>X-Master-Key</strong></li>
+        <li>Paste both below and click Save</li>
+      </ol>
+      <div class="form-row">
+        <label>Bin ID</label>
+        <input id="cloudBinId" placeholder="e.g. 68f1a2b3c4d5e6f7a8b9c0d1" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px">
+      </div>
+      <div class="form-row" style="margin-top:0.8rem">
+        <label>Master Key (X-Master-Key)</label>
+        <input id="cloudApiKey" type="password" placeholder="Your JSONBin master key" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px">
+      </div>
+      <div id="cloudMsg" style="font-size:0.85rem;margin:0.8rem 0;min-height:1.2em"></div>
+      <div class="form-actions">
+        <button type="button" class="btn-primary" onclick="saveCloudSettings()">Save & Sync</button>
+        <button type="button" class="btn-secondary" onclick="pushLocalToCloud()">Upload current stock</button>
+        <button type="button" class="btn-secondary" onclick="closeCloudSettings()">Close</button>
+      </div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:1rem">
+        After setup, host this page on <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">Netlify Drop</a> (drag the folder) to get a permanent link you can open on any phone or computer.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+const FLAGS = ['Pre-Reg','Awaiting Prep','Bodyshop','Workshop','Lower Price','Special Offer','On Loan','Other','Auction','Deposit Taken'];
+const ACCS = ['6 Speed','7 Seater','8 Seater','Air Conditioning','Alloy Wheels','Auto Headlamps','Auto Wipers','Bluetooth','Central Locking','Climate Control','Cruise Control','DAB','Electric Seats','Electric Mirrors','Heated Mirrors','Heated Seats','Heated Steering Wheel','Leather (Half)','Leather (Full)','Panoramic Sunroof','Parking Sensors (F)','Parking Sensors (R)','Power Tailgate','Privacy Glass','Satellite Navigation','Sunroof (Electric)','Head Up Display'];
+
+const IMPORTED_STOCK = [];
+let vehicles = JSON.parse(localStorage.getItem('dealerStock') || 'null') || [];
+const IMPORT_VERSION = 'pentagon-burton-2026-10-22';
+let currentCat = 'Stock';
+let currentId = null;
+
+function getCloudConfig() {
+  try {
+    return JSON.parse(localStorage.getItem('dealerCloud') || 'null');
+  } catch { return null; }
+}
+
+function setSyncStatus(text, cls) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'sync-status' + (cls ? ' ' + cls : '');
+}
+
+async function pullFromCloud() {
+  const cfg = getCloudConfig();
+  if (!cfg || !cfg.binId || !cfg.apiKey) return false;
+  setSyncStatus('Syncing…', 'pending');
+  try {
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + cfg.binId + '/latest', {
+      headers: { 'X-Master-Key': cfg.apiKey }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const list = data.record && data.record.vehicles ? data.record.vehicles : (Array.isArray(data.record) ? data.record : null);
+    if (list && Array.isArray(list)) {
+      vehicles = list;
+      localStorage.setItem('dealerStock', JSON.stringify(vehicles));
+      localStorage.setItem('dealerStockVersion', data.record.version || IMPORT_VERSION);
+      setSyncStatus('Cloud · ' + vehicles.length + ' cars', 'ok');
+      return true;
+    }
+    throw new Error('Bad data shape');
+  } catch (e) {
+    setSyncStatus('Cloud error', 'err');
+    console.warn('Cloud pull failed', e);
+    return false;
+  }
+}
+
+async function pushToCloud() {
+  const cfg = getCloudConfig();
+  if (!cfg || !cfg.binId || !cfg.apiKey) return false;
+  try {
+    const body = { vehicles, version: IMPORT_VERSION, updatedAt: new Date().toISOString() };
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + cfg.binId, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': cfg.apiKey
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    setSyncStatus('Cloud · saved', 'ok');
+    return true;
+  } catch (e) {
+    setSyncStatus('Save failed', 'err');
+    console.warn('Cloud push failed', e);
+    return false;
+  }
+}
+
+function openCloudSettings() {
+  const cfg = getCloudConfig() || {};
+  document.getElementById('cloudBinId').value = cfg.binId || '';
+  document.getElementById('cloudApiKey').value = cfg.apiKey || '';
+  document.getElementById('cloudMsg').textContent = '';
+  document.getElementById('cloudModal').style.display = 'flex';
+}
+
+function closeCloudSettings() {
+  document.getElementById('cloudModal').style.display = 'none';
+}
+
+async function saveCloudSettings() {
+  const binId = document.getElementById('cloudBinId').value.trim();
+  const apiKey = document.getElementById('cloudApiKey').value.trim();
+  const msg = document.getElementById('cloudMsg');
+  if (!binId || !apiKey) {
+    msg.style.color = '#f87171';
+    msg.textContent = 'Both Bin ID and Master Key are required.';
+    return;
+  }
+  localStorage.setItem('dealerCloud', JSON.stringify({ binId, apiKey }));
+  msg.style.color = '#fbbf24';
+  msg.textContent = 'Saved. Syncing…';
+  const ok = await pullFromCloud();
+  if (!ok) {
+    // empty bin — push current stock
+    await pushToCloud();
+    msg.style.color = '#4ade80';
+    msg.textContent = 'Connected. Current stock uploaded to the cloud.';
+  } else {
+    msg.style.color = '#4ade80';
+    msg.textContent = 'Connected. Loaded ' + vehicles.length + ' vehicles from the cloud.';
+  }
+  renderList();
+}
+
+async function pushLocalToCloud() {
+  const msg = document.getElementById('cloudMsg');
+  msg.style.color = '#fbbf24';
+  msg.textContent = 'Uploading…';
+  const ok = await pushToCloud();
+  msg.style.color = ok ? '#4ade80' : '#f87171';
+  msg.textContent = ok ? 'Upload complete.' : 'Upload failed — check Bin ID and key.';
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function daysInStock(v) {
+  if (!v.bring_into_stock_date) return null;
+  const d = new Date(v.bring_into_stock_date);
+  return Math.floor((Date.now() - d) / 86400000);
+}
+
+function save() {
+  localStorage.setItem('dealerStock', JSON.stringify(vehicles));
+  pushToCloud(); // fire-and-forget when cloud is configured
+}
+
+function renderList() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let list = vehicles.filter(v => currentCat === 'All' || v.category === currentCat);
+  if (q) {
+    list = list.filter(v =>
+      (v.registration||'').toLowerCase().includes(q) ||
+      (v.make||'').toLowerCase().includes(q) ||
+      (v.model||'').toLowerCase().includes(q) ||
+      (v.derivative||'').toLowerCase().includes(q) ||
+      (v.colour||'').toLowerCase().includes(q) ||
+      (v.chassis_number||'').toLowerCase().includes(q)
+    );
+  }
+  // Natural model sort (208 before 2008 before 3008) then price low→high within model
+  function naturalModelKey(model) {
+    return String(model || '').toLowerCase().replace(/(\d+)/g, n => n.padStart(8, '0'));
+  }
+  function priceVal(v) {
+    const p = Number(v.retail_price);
+    return (v.retail_price == null || v.retail_price === '' || isNaN(p)) ? Infinity : p;
+  }
+  list.sort((a, b) => {
+    const makeCmp = (a.make || '').localeCompare(b.make || '', undefined, { sensitivity: 'base' });
+    if (makeCmp !== 0) return makeCmp;
+    const modelCmp = naturalModelKey(a.model).localeCompare(naturalModelKey(b.model));
+    if (modelCmp !== 0) return modelCmp;
+    return priceVal(a) - priceVal(b);
+  });
+
+  document.getElementById('pageTitle').innerHTML = `${currentCat} <span class="count">(${list.length})</span>`;
+
+  // Group: Make → Model → vehicles (already sorted by make, model, price)
+  const grouped = {};
+  list.forEach(v => {
+    const m = v.make || 'Unknown';
+    const mod = v.model || 'Unknown';
+    if (!grouped[m]) grouped[m] = {};
+    if (!grouped[m][mod]) grouped[m][mod] = [];
+    grouped[m][mod].push(v);
+  });
+
+  const area = document.getElementById('listArea');
+  if (!list.length) {
+    area.innerHTML = `<div class="empty"><p>No vehicles found.</p><button class="btn-primary" style="margin-top:1rem" onclick="openForm()">Add your first vehicle</button></div>`;
+    return;
+  }
+
+  let html = '';
+  const makeOrder = Object.keys(grouped).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  for (const make of makeOrder) {
+    html += `<section class="make-section"><h2 class="make-title">${make}</h2>`;
+    const models = grouped[make];
+    const modelOrder = Object.keys(models).sort((a, b) => naturalModelKey(a).localeCompare(naturalModelKey(b)));
+    for (const model of modelOrder) {
+      const cars = models[model];
+      html += `<h3 class="model-title">${model} <span class="model-count">(${cars.length})</span></h3>`;
+      html += `<div class="vehicle-grid">`;
+      cars.forEach(v => {
+        const days = daysInStock(v);
+        const flags = (v.status_flags||[]).map(f => `<span class="flag flag-${f.toLowerCase().replace(/ /g,'-')}">${f}</span>`).join('');
+        html += `
+          <div class="vehicle-card" onclick="openDetail('${v.id}')">
+            <div class="card-top">
+              <span class="model">${v.model||''}</span>
+              <span class="price">£${Number(v.retail_price||0).toLocaleString()}</span>
+            </div>
+            <div class="spec">${v.derivative||''}</div>
+            <div class="meta"><span>${v.fuel||''} ${v.body_type||''}</span><span>${v.transmission||''}</span></div>
+            <div class="meta"><span>${v.model_year||''}</span><span>${Number(v.mileage||0).toLocaleString()} mls</span></div>
+            <div class="reg">${v.registration||''}</div>
+            <div class="colour">${v.colour||''}</div>
+            ${flags ? `<div class="flags">${flags}</div>` : ''}
+            ${days!==null ? `<div class="days">${days} days</div>` : ''}
+          </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</section>`;
+  }
+  area.innerHTML = html;
+}
+
+function openDetail(id) {
+  const v = vehicles.find(x => x.id === id);
+  if (!v) return;
+  currentId = id;
+  document.getElementById('detailTitle').textContent = `${v.registration} – ${v.make} ${v.model}`;
+  const days = daysInStock(v);
+  const flags = (v.status_flags||[]).map(f => `<span class="flag flag-${f.toLowerCase().replace(/ /g,'-')}">${f}</span>`).join(' ');
+  const accs = (v.accessories||[]).map(a => `<li>✓ ${a}</li>`).join('');
+  const notes = (v.notes||[]).slice().reverse().map(n => `
+    <div class="note-item"><div class="note-date">${n.date}</div><div class="note-text">${n.text}</div></div>`).join('');
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="photo-box">Photo Unavailable</div>
+        <h1 style="font-size:1.6rem;letter-spacing:1px">${v.registration}</h1>
+        <h2 style="font-size:1.2rem;font-weight:600">${v.make} ${v.model}</h2>
+        <p style="color:var(--muted);margin:0.3rem 0">${v.derivative||''}</p>
+        <p style="color:var(--muted);font-size:0.9rem">${v.fuel||''} ${v.body_type||''} · ${v.colour||''} · ${v.model_year||''} · ${Number(v.mileage||0).toLocaleString()} miles</p>
+        ${v.special_offer ? `<div class="special" style="margin-top:0.5rem">${v.special_offer}</div>` : ''}
+        <div class="price-lg">£${Number(v.retail_price||0).toLocaleString()}</div>
+        ${flags ? `<div class="flags" style="margin-top:0.5rem">${flags}</div>` : ''}
+      </div>
+      <div>
+        <div class="info-box">
+          <h3>Key Details</h3>
+          <dl>
+            <dt>Owners</dt><dd>${v.num_owners||'–'}</dd>
+            <dt>MOT Expiry</dt><dd>${v.mot_expiry||'–'}</dd>
+            <dt>Last Service</dt><dd>${v.last_service_date||'–'}</dd>
+            <dt>Service History</dt><dd>${v.service_history||'–'}</dd>
+            <dt>Peg No.</dt><dd>${v.peg_number||'–'}</dd>
+            <dt>Chassis</dt><dd>${v.chassis_number||'–'}</dd>
+            <dt>Engine No.</dt><dd>${v.engine_number||'–'}</dd>
+            <dt>In Stock Since</dt><dd>${v.bring_into_stock_date||'–'}</dd>
+            <dt>Days in Stock</dt><dd>${days!==null?days:'–'}</dd>
+            <dt>Category</dt><dd>${v.category||'–'}</dd>
+            <dt>VAT Qual</dt><dd>${v.vat_qual||'–'}</dd>
+          </dl>
+          ${v.service_history_notes ? `<p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">${v.service_history_notes}</p>` : ''}
+        </div>
+        ${accs ? `<div class="info-box"><h3>Accessories</h3><ul class="acc-list">${accs}</ul></div>` : ''}
+      </div>
+    </div>
+    <div class="notes-area">
+      <h3>Sales Notes History</h3>
+      <div class="note-form">
+        <textarea id="newNoteText" placeholder="Add a new sales note..."></textarea>
+        <button class="btn-primary" onclick="addNote()">Add Note</button>
+      </div>
+      ${notes || '<p style="color:var(--muted);font-size:0.9rem">No sales notes yet.</p>'}
+    </div>`;
+  document.getElementById('detailModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('detailModal').style.display = 'none'; currentId = null; }
+
+async function lookupReg() {
+  const regInput = document.getElementById('f_registration');
+  const status = document.getElementById('lookupStatus');
+  const btn = document.getElementById('lookupBtn');
+  let reg = (regInput.value || '').replace(/\s+/g, '').toUpperCase();
+  if (!reg || reg.length < 4) {
+    status.textContent = 'Enter a valid UK registration first';
+    status.style.color = 'var(--danger)';
+    return;
+  }
+  regInput.value = reg;
+  status.textContent = 'Looking up…';
+  status.style.color = 'var(--muted)';
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  // Try a free public endpoint first (may be blocked by CORS)
+  // Fallback: show helpful message + keep form editable
+  try {
+    // Zyfy-style or similar public endpoints often need a key.
+    // For pure browser use we attempt a simple fetch; most will fail due to CORS.
+    // Users can later plug in their own key / backend.
+
+    // Demo mode with a few known examples so the feature is usable immediately
+    const demo = {
+      'DC66DVH': { make: 'AUDI', model: 'A1', derivative: '1.4 A1 Sportback TFSI Sport 5Dr', fuel: 'Petrol', body_type: 'Hatchback', transmission: 'Manual', colour: 'Black', model_year: 2016, engine_cc: 1395, doors: 5, date_of_registration: '2016-11-29' },
+      'GY21XJB': { make: 'AUDI', model: 'Q3', derivative: '2.0 Q3 Technik 35 TDI Quattro Semi-Auto 5Dr', fuel: 'Diesel', body_type: 'Estate', transmission: 'Semi-Auto', colour: 'Black', model_year: 2021, engine_cc: 1968, doors: 5 },
+      'YL71HKZ': { make: 'AUDI', model: 'Q7', derivative: '3.0 Q7 Black Edition 50 TDI MHEV Quattro Auto 5Dr', fuel: 'Diesel', body_type: 'Estate', transmission: 'Automatic', colour: 'Silver', model_year: 2021, engine_cc: 2967, doors: 5 },
+      'NW60AUD': { make: 'AUDI', model: 'SQ5', derivative: '3.0 SQ5 TDI Quattro Auto 5Dr', fuel: 'Diesel', body_type: 'Estate', transmission: 'Automatic', colour: 'Black', model_year: 2015, engine_cc: 2967, doors: 5 },
+      'YC25VVU': { make: 'BMW', model: '1 Series', derivative: '2.0 123 M Sport MHEV xDrive Auto 5Dr', fuel: 'Petrol', body_type: 'Hatchback', transmission: 'Automatic', colour: 'Grey', model_year: 2025, engine_cc: 1998, doors: 5 }
+    };
+
+    if (demo[reg]) {
+      const d = demo[reg];
+      if (d.make) document.getElementById('f_make').value = d.make;
+      if (d.model) document.getElementById('f_model').value = d.model;
+      if (d.derivative) document.getElementById('f_derivative').value = d.derivative;
+      if (d.fuel) document.getElementById('f_fuel').value = d.fuel;
+      if (d.body_type) document.getElementById('f_body_type').value = d.body_type;
+      if (d.transmission) document.getElementById('f_transmission').value = d.transmission;
+      if (d.colour) document.getElementById('f_colour').value = d.colour;
+      if (d.model_year) document.getElementById('f_model_year').value = d.model_year;
+      if (d.engine_cc) document.getElementById('f_engine_cc').value = d.engine_cc;
+      if (d.doors) document.getElementById('f_doors').value = d.doors;
+      if (d.date_of_registration) document.getElementById('f_date_of_registration').value = d.date_of_registration;
+      status.textContent = 'Details filled from demo data (this reg was in your screenshots)';
+      status.style.color = 'var(--success)';
+    } else {
+      // Attempt a real lookup via a public CORS-friendly proxy if available.
+      // Most real DVLA / commercial APIs block browser calls.
+      status.innerHTML = 'No auto-data for this reg in demo mode.<br>For live UK lookups you need a free API key (e.g. <a href="https://zyfy.uk" target="_blank">zyfy.uk</a> – 100 free/month). I can wire it in if you get a key.';
+      status.style.color = 'var(--muted)';
+    }
+  } catch (err) {
+    status.textContent = 'Lookup failed (CORS or network). Fill the fields manually or add an API key later.';
+    status.style.color = 'var(--danger)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Lookup';
+  }
+}
+
+function openForm(id = null) {
+  document.getElementById('vehicleForm').reset();
+  document.getElementById('f_id').value = '';
+  document.getElementById('formTitle').textContent = 'Add Vehicle';
+  document.getElementById('f_bring_into_stock_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f_num_owners').value = 1;
+
+  // build checkboxes
+  const flagBox = document.getElementById('statusFlags');
+  flagBox.innerHTML = FLAGS.map(f => `<label><input type="checkbox" name="flag" value="${f}"> ${f}</label>`).join('');
+  const accBox = document.getElementById('accessoriesList');
+  accBox.innerHTML = ACCS.map(a => `<label><input type="checkbox" name="acc" value="${a}"> ${a}</label>`).join('');
+
+  if (id) {
+    const v = vehicles.find(x => x.id === id);
+    if (!v) return;
+    document.getElementById('formTitle').textContent = 'Edit Vehicle';
+    document.getElementById('f_id').value = v.id;
+    const map = {
+      registration:'f_registration', make:'f_make', model:'f_model', derivative:'f_derivative',
+      engine_cc:'f_engine_cc', mileage:'f_mileage', doors:'f_doors', transmission:'f_transmission',
+      fuel:'f_fuel', body_type:'f_body_type', date_of_registration:'f_date_of_registration',
+      model_year:'f_model_year', num_owners:'f_num_owners', colour:'f_colour',
+      chassis_number:'f_chassis_number', engine_number:'f_engine_number', sales_manager:'f_sales_manager',
+      peg_number:'f_peg_number', last_service_date:'f_last_service_date', mot_expiry:'f_mot_expiry',
+      previous_owner:'f_previous_owner', service_history:'f_service_history', service_history_notes:'f_service_history_notes',
+      category:'f_category', vat_qual:'f_vat_qual', retail_price:'f_retail_price',
+      bring_into_stock_date:'f_bring_into_stock_date', special_offer:'f_special_offer'
+    };
+    for (const [k, el] of Object.entries(map)) {
+      if (v[k] !== undefined && v[k] !== null) document.getElementById(el).value = v[k];
+    }
+    (v.status_flags||[]).forEach(f => {
+      const cb = flagBox.querySelector(`input[value="${f}"]`);
+      if (cb) cb.checked = true;
+    });
+    (v.accessories||[]).forEach(a => {
+      const cb = accBox.querySelector(`input[value="${a}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+  document.getElementById('formModal').style.display = 'flex';
+}
+
+function closeForm() { document.getElementById('formModal').style.display = 'none'; }
+
+function saveVehicle(e) {
+  e.preventDefault();
+  const id = document.getElementById('f_id').value || uid();
+  const flags = [...document.querySelectorAll('#statusFlags input:checked')].map(c => c.value);
+  const accs = [...document.querySelectorAll('#accessoriesList input:checked')].map(c => c.value);
+  const noteText = document.getElementById('f_new_note').value.trim();
+
+  const existing = vehicles.find(x => x.id === id);
+  const notes = existing ? (existing.notes || []) : [];
+  if (noteText) {
+    notes.push({ date: new Date().toLocaleString('en-GB'), text: noteText });
+  }
+
+  const v = {
+    id,
+    registration: document.getElementById('f_registration').value.trim().toUpperCase(),
+    make: document.getElementById('f_make').value.trim(),
+    model: document.getElementById('f_model').value.trim(),
+    derivative: document.getElementById('f_derivative').value.trim(),
+    engine_cc: document.getElementById('f_engine_cc').value || null,
+    mileage: document.getElementById('f_mileage').value || null,
+    doors: document.getElementById('f_doors').value || null,
+    transmission: document.getElementById('f_transmission').value,
+    fuel: document.getElementById('f_fuel').value,
+    body_type: document.getElementById('f_body_type').value,
+    date_of_registration: document.getElementById('f_date_of_registration').value,
+    model_year: document.getElementById('f_model_year').value || null,
+    num_owners: document.getElementById('f_num_owners').value || 1,
+    colour: document.getElementById('f_colour').value.trim(),
+    chassis_number: document.getElementById('f_chassis_number').value.trim(),
+    engine_number: document.getElementById('f_engine_number').value.trim(),
+    sales_manager: document.getElementById('f_sales_manager').value.trim(),
+    peg_number: document.getElementById('f_peg_number').value.trim(),
+    last_service_date: document.getElementById('f_last_service_date').value,
+    mot_expiry: document.getElementById('f_mot_expiry').value,
+    previous_owner: document.getElementById('f_previous_owner').value.trim(),
+    service_history: document.getElementById('f_service_history').value,
+    service_history_notes: document.getElementById('f_service_history_notes').value.trim(),
+    category: document.getElementById('f_category').value,
+    vat_qual: document.getElementById('f_vat_qual').value,
+    retail_price: document.getElementById('f_retail_price').value || null,
+    bring_into_stock_date: document.getElementById('f_bring_into_stock_date').value || new Date().toISOString().slice(0,10),
+    special_offer: document.getElementById('f_special_offer').value.trim(),
+    status_flags: flags,
+    accessories: accs,
+    notes
+  };
+
+  const idx = vehicles.findIndex(x => x.id === id);
+  if (idx >= 0) vehicles[idx] = v;
+  else vehicles.push(v);
+  save();
+  closeForm();
+  renderList();
+  if (idx >= 0) openDetail(id);
+}
+
+function editCurrent() {
+  closeModal();
+  openForm(currentId);
+}
+
+function deleteCurrent() {
+  if (!confirm('Delete this vehicle permanently?')) return;
+  vehicles = vehicles.filter(x => x.id !== currentId);
+  save();
+  closeModal();
+  renderList();
+}
+
+function addNote() {
+  const text = document.getElementById('newNoteText').value.trim();
+  if (!text) return;
+  const v = vehicles.find(x => x.id === currentId);
+  if (!v) return;
+  if (!v.notes) v.notes = [];
+  v.notes.push({ date: new Date().toLocaleString('en-GB'), text });
+  save();
+  openDetail(currentId);
+}
+
+function printStockCard() {
+  const v = vehicles.find(x => x.id === currentId);
+  if (!v) return;
+  const days = daysInStock(v);
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <html><head><title>Stock Card – ${v.registration}</title>
+    <style>
+      body{font-family:Arial,sans-serif;margin:20px;color:#222}
+      .card{border:2px solid #333;padding:20px;max-width:700px}
+      h1{margin:0 0 4px;font-size:26px} h2{margin:0 0 12px;font-size:18px;font-weight:normal;color:#444}
+      .price{font-size:30px;font-weight:bold;margin:12px 0}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:16px 0}
+      .grid div{border-bottom:1px solid #ddd;padding:3px 0}
+      .label{color:#666;font-size:11px}
+      .flag{display:inline-block;background:#eee;padding:2px 7px;margin:2px;border-radius:3px;font-size:11px}
+      ul{columns:2}
+    </style></head><body>
+    <div class="card">
+      <h1>${v.registration}</h1>
+      <h2>${v.make} ${v.model} – ${v.derivative||''}</h2>
+      <div class="price">£${Number(v.retail_price||0).toLocaleString()}</div>
+      ${v.special_offer?`<p><strong>${v.special_offer}</strong></p>`:''}
+      <div class="grid">
+        <div><span class="label">Year</span><br>${v.model_year||'–'}</div>
+        <div><span class="label">Mileage</span><br>${Number(v.mileage||0).toLocaleString()} miles</div>
+        <div><span class="label">Colour</span><br>${v.colour||'–'}</div>
+        <div><span class="label">Fuel / Body</span><br>${v.fuel||''} ${v.body_type||''}</div>
+        <div><span class="label">Transmission</span><br>${v.transmission||'–'}</div>
+        <div><span class="label">Owners</span><br>${v.num_owners||'–'}</div>
+        <div><span class="label">MOT Expiry</span><br>${v.mot_expiry||'–'}</div>
+        <div><span class="label">Last Service</span><br>${v.last_service_date||'–'}</div>
+        <div><span class="label">Service History</span><br>${v.service_history||'–'}</div>
+        <div><span class="label">Chassis</span><br>${v.chassis_number||'–'}</div>
+        <div><span class="label">Peg No.</span><br>${v.peg_number||'–'}</div>
+        <div><span class="label">In Stock Since</span><br>${v.bring_into_stock_date||'–'}</div>
+        <div><span class="label">Days in Stock</span><br>${days!==null?days:'–'}</div>
+      </div>
+      ${v.service_history_notes?`<p style="font-size:12px;color:#555">${v.service_history_notes}</p>`:''}
+      ${(v.status_flags||[]).map(f=>`<span class="flag">${f}</span>`).join('')}
+      ${(v.accessories||[]).length?`<h3>Accessories</h3><ul>${v.accessories.map(a=>`<li>${a}</li>`).join('')}</ul>`:''}
+    </div>
+    <script>window.print();<\/script>
+    </body></html>`);
+  w.document.close();
+}
+
+// Nav clicks
+document.getElementById('navLinks').addEventListener('click', e => {
+  if (e.target.tagName === 'BUTTON') {
+    document.querySelectorAll('#navLinks button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentCat = e.target.dataset.cat;
+    renderList();
+  }
+});
+
+document.getElementById('searchInput').addEventListener('keyup', e => {
+  if (e.key === 'Enter') renderList();
+});
+
+// Close modals on backdrop click
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeForm(); closeCloudSettings(); } });
+});
+
+async function loadFromVehiclesJson() {
+  // Works when hosted on Vercel/GitHub Pages (http/https). Fails on file://
+  if (!location.protocol.startsWith('http')) return false;
+  try {
+    setSyncStatus('Loading…', 'pending');
+    let list = null;
+    // Prefer single vehicles.json; fall back to split parts
+    try {
+      const res = await fetch('./vehicles.json?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) list = await res.json();
+    } catch (_) {}
+    if (!list || !list.length) {
+      const parts = await Promise.all([0,1,2,3].map(i =>
+        fetch('./vehicles_part' + i + '.json?t=' + Date.now(), { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : [])
+          .catch(() => [])
+      ));
+      list = parts.flat();
+    }
+    if (!Array.isArray(list) || !list.length) throw new Error('Empty list');
+    // Preserve local notes/status by registration if present
+    const localNotes = {};
+    (vehicles || []).forEach(v => {
+      if (v.notes && v.notes.length) localNotes[v.registration] = v.notes;
+      if (v.status_flags && v.status_flags.length) localNotes[v.registration + '_flags'] = v.status_flags;
+      if (v.category && v.category !== 'Stock') localNotes[v.registration + '_cat'] = v.category;
+    });
+    vehicles = list.map(v => {
+      const notes = localNotes[v.registration];
+      const flags = localNotes[v.registration + '_flags'];
+      const cat = localNotes[v.registration + '_cat'];
+      if (notes) v.notes = notes;
+      if (flags) v.status_flags = flags;
+      if (cat) v.category = cat;
+      return v;
+    });
+    localStorage.setItem('dealerStock', JSON.stringify(vehicles));
+    localStorage.setItem('dealerStockVersion', IMPORT_VERSION);
+    setSyncStatus('Live · ' + vehicles.length + ' cars', 'ok');
+    return true;
+  } catch (e) {
+    console.warn('vehicles.json load failed', e);
+    return false;
+  }
+}
+
+(async function init() {
+  // 1) Preferred: shared vehicles.json on Vercel / GitHub Pages
+  if (await loadFromVehiclesJson()) {
+    renderList();
+    return;
+  }
+  // 2) Optional JSONBin cloud
+  const cfg = getCloudConfig();
+  if (cfg && cfg.binId && cfg.apiKey) {
+    const ok = await pullFromCloud();
+    if (ok) { renderList(); return; }
+  }
+  // 3) Local fallback
+  if (!vehicles || !vehicles.length || localStorage.getItem('dealerStockVersion') !== IMPORT_VERSION) {
+    vehicles = IMPORTED_STOCK;
+    localStorage.setItem('dealerStock', JSON.stringify(vehicles));
+    localStorage.setItem('dealerStockVersion', IMPORT_VERSION);
+  }
+  setSyncStatus(location.protocol.startsWith('http') ? 'Local cache' : 'Local file — deploy to share', '');
+  renderList();
+})();
+</script>
+</body>
+</html>

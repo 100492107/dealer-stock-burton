@@ -306,6 +306,26 @@ function save() {
   localStorage.setItem('dealerStock', JSON.stringify(vehicles));
 }
 
+
+function formatSpec(d) {
+  if (!d) return '';
+  let s = String(d).trim();
+  // 12 PureTech / 10 TFSI / 20 TDI → 1.2 / 1.0 / 2.0
+  s = s.replace(/\b([1-3])(\d)\s+(PureTech|Puretech|TFSI|Tfsi|TSI|Tsi|TDI|Tdi|HDi|Hdi|BlueHDi|Bluehdi|EcoBoost|Ecoboost|THP|Thp|VTi|Vti|dCi|Dci|CDTI|Cdti|Multijet|GDI|Gdi|DM-?i|Dm|Skyactiv)\b/i,
+    (_, a, b, eng) => a + '.' + b + ' ' + eng);
+  // Title/acronym tidy
+  const map = [
+    [/\bPuretech\b/gi, 'PureTech'], [/\bTfsi\b/g, 'TFSI'], [/\bTsi\b/g, 'TSI'],
+    [/\bTdi\b/g, 'TDI'], [/\bHdi\b/gi, 'HDi'], [/\bBluehdi\b/gi, 'BlueHDi'],
+    [/\bEcoboost\b/gi, 'EcoBoost'], [/\bEat6\b/gi, 'EAT6'], [/\bEat8\b/gi, 'EAT8'],
+    [/\bSs\b/g, 's/s'], [/\bPs\b/g, 'PS'], [/\bS Tronic\b/gi, 'S tronic'],
+    [/\bDm I\b/gi, 'DM-i'], [/\bAwd\b/g, 'AWD'], [/\bCvt\b/g, 'CVT'],
+    [/\bKwh\b/gi, 'kWh'],
+  ];
+  map.forEach(([pat, rep]) => { s = s.replace(pat, rep); });
+  return s.replace(/\s+/g, ' ').trim();
+}
+
 function fmtPrice(p) {
   if (p == null || p === '') return '—';
   return '£' + Number(p).toLocaleString('en-GB', { maximumFractionDigits: 0 });
@@ -345,7 +365,7 @@ function cardHtml(v) {
     ${img}
     <div class="card-body">
       <div class="card-top"><span class="model">${v.model || ''}</span><span class="price">${fmtPrice(v.retail_price)}</span></div>
-      <div class="spec">${v.derivative || ''}</div>
+      <div class="spec">${formatSpec(v.derivative || '')}</div>
       <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
       <div class="reg">${v.registration || ''}</div>
       <div class="colour">${v.colour || ''}${days != null ? ' · ' + days + 'd' : ''}</div>
@@ -439,7 +459,7 @@ function openDetail(id) {
       <div>
         <div class="info-box">
           <h3>Spec</h3>
-          <p style="font-size:0.85rem">${v.derivative||'—'}</p>
+          <p style="font-size:0.85rem">${formatSpec(v.derivative)||'—'}</p>
         </div>
         <div class="info-box">
           <h3>Flags</h3>

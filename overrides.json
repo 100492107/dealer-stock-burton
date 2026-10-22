@@ -59,9 +59,9 @@
   },
   "YE20UWP": {
     "service_history": "Full Service History",
-    "service_history_notes": "1 OWNER FSH",
+    "service_history_notes": "TEST",
     "status_flags": [],
-    "special_offer": "",
+    "special_offer": "%",
     "category": "Stock",
     "notes": [
       {
@@ -69,6 +69,6 @@
         "text": "2 KEYS. PEG 23."
       }
     ],
-    "updatedAt": "2026-10-22T19:16:12.007Z"
+    "updatedAt": "2026-10-22T19:16:53.164Z"
   }
 }

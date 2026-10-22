@@ -58,12 +58,17 @@
     "updatedAt": "2026-10-22T11:50:05.987Z"
   },
   "YE20UWP": {
-    "service_history": "",
-    "service_history_notes": "",
+    "service_history": "Full Service History",
+    "service_history_notes": "FSH",
     "status_flags": [],
     "special_offer": "",
     "category": "Stock",
-    "notes": [],
-    "updatedAt": "2026-10-22T14:00:38.340Z"
+    "notes": [
+      {
+        "date": "22/10/2026, 20:15:31",
+        "text": "2 KEYS. PEG 23."
+      }
+    ],
+    "updatedAt": "2026-10-22T19:15:33.053Z"
   }
 }

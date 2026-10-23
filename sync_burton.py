@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync full Burton stock from Pentagon (used + new + vans, including no-photo cars)."""
+"""Sync Burton stock. Live = retailable; gone from website = Sold (out of stock)."""
 import re, json
 from html import unescape
 from datetime import date
@@ -12,21 +12,18 @@ MANUAL_FIELDS = ('notes', 'service_history', 'service_history_notes', 'status_fl
 
 def fix_make(m):
     m = (m or '').replace('-', ' ').strip()
-    mapping = {'ds': 'DS', 'byd': 'BYD', 'bmw': 'BMW', 'seat': 'SEAT', 'cupra': 'CUPRA',
-               'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz'}
+    mapping = {'ds': 'DS', 'byd': 'BYD', 'bmw': 'BMW', 'seat': 'SEAT', 'cupra': 'CUPRA', 'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz'}
     return mapping.get(m.lower(), m.title())
 
 def clean_model(make, model, derivative):
     m = (model or '').strip()
     mk = (make or '').strip()
     if not m: return m
-    if mk and m.lower().startswith(mk.lower() + ' '):
-        m = m[len(mk):].strip()
+    if mk and m.lower().startswith(mk.lower() + ' '): m = m[len(mk):].strip()
     parts = m.split()
     out = []
     for p in parts:
-        if not out or out[-1].lower() != p.lower():
-            out.append(p)
+        if not out or out[-1].lower() != p.lower(): out.append(p)
     return ' '.join(out)
 
 def natural_model_key(model):
@@ -37,19 +34,13 @@ def natural_model_key(model):
 def tidy_title(title):
     if not title: return ''
     s = re.sub(r'\s+', ' ', title).strip()
-    reps = [(r'\bPuretech\b', 'PureTech'), (r'\bTfsi\b', 'TFSI'), (r'\bTsi\b', 'TSI'),
-            (r'\bTdi\b', 'TDI'), (r'\bHdi\b', 'HDi'), (r'\bCrdi\b', 'CRDi'), (r'\bTce\b', 'TCe'),
-            (r'\bMhev\b', 'MHEV'), (r'\bDm I\b', 'DM-i'), (r'\bEat6\b', 'EAT6'), (r'\bEat8\b', 'EAT8'),
-            (r'\bCvt\b', 'CVT'), (r'\bAwd\b', 'AWD'), (r'(\d)\s*kwh\b', r'\1 kWh'), (r'\bPs\b', 'PS'),
-            (r'\bBhp\b', 'BHP'), (r'\bEhybrid\b', 'e-Hybrid'), (r'\bE Tech\b', 'E-Tech')]
+    reps = [(r'\bPuretech\b', 'PureTech'), (r'\bTfsi\b', 'TFSI'), (r'\bTsi\b', 'TSI'), (r'\bTdi\b', 'TDI'), (r'\bHdi\b', 'HDi'), (r'\bCrdi\b', 'CRDi'), (r'\bTce\b', 'TCe'), (r'\bMhev\b', 'MHEV'), (r'\bDm I\b', 'DM-i'), (r'\bEat6\b', 'EAT6'), (r'\bEat8\b', 'EAT8'), (r'\bCvt\b', 'CVT'), (r'\bAwd\b', 'AWD'), (r'(\d)\s*kwh\b', r'\1 kWh'), (r'\bPs\b', 'PS'), (r'\bBhp\b', 'BHP'), (r'\bEhybrid\b', 'e-Hybrid'), (r'\bE Tech\b', 'E-Tech')]
     for pat, rep in reps:
         s = re.sub(pat, rep, s, flags=re.I)
     return s
 
 def http_get(params):
-    req = Request(BASE + '?' + params, headers={
-        'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest',
-        'Referer': 'https://www.pentagon-group.co.uk/used-cars-in-burton'})
+    req = Request(BASE + '?' + params, headers={'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.pentagon-group.co.uk/used-cars-in-burton'})
     return unescape(urlopen(req, timeout=90).read().decode('utf-8', errors='replace'))
 
 def extract_reg(body):
@@ -149,7 +140,8 @@ def load_json(path, default):
     try: return json.loads(p.read_text())
     except Exception: return default
 
-def apply_manual(vehicle, previous_row, overrides):
+def apply_manual(vehicle, previous_row, overrides, *, is_live=True):
+    """Notes/service preserved. Live cars never stay Sold; gone cars stay Sold."""
     reg = vehicle.get('registration')
     prev = previous_row or {}
     o = (overrides.get(reg) or overrides.get(vehicle.get('id')) or {})
@@ -157,11 +149,17 @@ def apply_manual(vehicle, previous_row, overrides):
         if key in o and o[key] is not None: vehicle[key] = o[key]
         elif prev.get(key): vehicle[key] = prev[key]
     if prev.get('bring_into_stock_date'): vehicle['bring_into_stock_date'] = prev['bring_into_stock_date']
-    if o.get('category') and o['category'] not in ('',):
-        if vehicle.get('category') != 'Sold' and o['category'] != 'Stock': vehicle['category'] = o['category']
-    elif prev.get('category') and prev['category'] not in ('', 'Stock', 'Sold'):
-        if vehicle.get('category') != 'Sold': vehicle['category'] = prev['category']
     if not vehicle.get('status_flags') and prev.get('status_flags'): vehicle['status_flags'] = prev['status_flags']
+    if is_live:
+        vehicle.pop('sold_date', None)
+        manual = o.get('category') or (prev.get('category') if prev.get('category') in ('Demonstrators', 'Pre-reg', 'Commercials', 'Arriving Soon') else None)
+        if manual and manual not in ('Sold', 'Delivered'):
+            vehicle['category'] = manual
+        elif vehicle.get('category') in ('Sold', 'Delivered'):
+            vehicle['category'] = 'Stock'
+    else:
+        if o.get('category') == 'Delivered':
+            vehicle['category'] = 'Delivered'
     return vehicle
 
 def main():
@@ -171,26 +169,34 @@ def main():
     if isinstance(previous, dict): previous = previous.get('vehicles', [])
     overrides = load_json('overrides.json', {})
     if not isinstance(overrides, dict): overrides = {}
-    result, sold_count = [], 0
+    result, sold_count, returned_count = [], 0, 0
     prev_by_reg = {v['registration']: v for v in previous if v.get('registration')}
     live_regs = set(live_by_reg.keys())
     for reg, old in prev_by_reg.items():
         if reg not in live_regs:
             cat = old.get('category') or 'Stock'
-            if cat in ('Stock', 'Demonstrators', 'Pre-reg', 'Commercials', 'Arriving Soon'):
+            if cat not in ('Sold', 'Delivered'):
                 old['category'] = 'Sold'
                 old['sold_date'] = date.today().isoformat()
                 sold_count += 1
-            apply_manual(old, old, overrides)
+            apply_manual(old, old, overrides, is_live=False)
             result.append(old)
     for reg, v in live_by_reg.items():
-        apply_manual(v, prev_by_reg.get(reg), overrides)
+        prev = prev_by_reg.get(reg)
+        if prev and prev.get('category') in ('Sold', 'Delivered'):
+            returned_count += 1
+        apply_manual(v, prev, overrides, is_live=True)
+        if v.get('category') in ('Sold', 'Delivered'):
+            v['category'] = 'Stock'
+            v.pop('sold_date', None)
         result.append(v)
     result.sort(key=lambda x: (0 if x.get('category') in ('Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon') else 1, (x.get('make') or '').lower(), natural_model_key(x.get('model') or ''), x.get('retail_price') if x.get('retail_price') is not None else 999999999))
     (DIR / 'vehicles.json').write_text(json.dumps(result, separators=(',', ':')))
     imgs = {v['registration']: v['image_url'] for v in result if v.get('image_url')}
     (DIR / 'images_map.json').write_text(json.dumps(imgs, separators=(',', ':')))
-    print(f'Live on site: {len(live)} | DB total: {len(result)} | sold moved: {sold_count}')
+    stock_n = sum(1 for v in result if v.get('category') in ('Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'))
+    sold_n = sum(1 for v in result if v.get('category') == 'Sold')
+    print(f'Live on site: {len(live)} | In stock views: {stock_n} | Sold: {sold_n} (newly sold: {sold_count}, returned: {returned_count}) | DB total: {len(result)}')
 
 if __name__ == '__main__':
     main()

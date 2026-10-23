@@ -168,6 +168,29 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
 .check-grid label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer; }
 .form-actions { display: flex; gap: 0.55rem; margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
 
+
+@media (max-width: 720px) {
+  .filters-bar { padding: 0.65rem; }
+  .filters-bar .filter-row { width: 100%; }
+  .filters-bar label { flex: 1 1 42%; min-width: 120px; }
+  .filters-bar select, .filters-bar input { width: 100%; min-width: 0; }
+  .filters-bar .btn { width: 100%; margin-top: 0.35rem !important; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .search-box { width: 100%; }
+  .search-box input { flex: 1; width: auto; }
+  .vehicle-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .card-body { padding: 0.55rem 0.6rem 0.7rem; }
+  .modal { margin-top: 0.5rem; border-radius: 12px 12px 0 0; }
+  .modal-actions { width: 100%; }
+  .modal-actions .btn { flex: 1 1 auto; font-size: 0.85rem; padding: 0.55rem 0.7rem; }
+  .modal-header { flex-wrap: wrap; gap: 0.5rem; }
+  .note-form { flex-direction: column; }
+  .note-form .btn { width: 100%; }
+}
+@media (max-width: 420px) {
+  .vehicle-grid { grid-template-columns: 1fr; }
+}
+
 @media print {
   .top-nav, .no-print, .overlay { display: none !important; }
   body { background: #fff; }
@@ -245,7 +268,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
     <div class="modal-header">
       <h2 id="detailTitle">Vehicle</h2>
       <div class="modal-actions no-print">
-        <button type="button" class="btn btn-secondary" onclick="printStockCard()" title="Print stock card">🖨 Stock card</button>
+        <button type="button" class="btn btn-secondary" onclick="printStockCard()" title="Print stock card" title="Open Pentagon print stock card">🖨 Stock card</button>
         <button type="button" class="btn btn-primary btn-lg" onclick="editCurrent()">✏️ Edit vehicle</button>
         <button type="button" class="btn btn-danger" onclick="deleteCurrent()">Remove</button>
         <button type="button" class="modal-close" onclick="closeModal()" title="Close" aria-label="Close">&times;</button>
@@ -621,8 +644,48 @@ function deleteCurrent() {
 }
 
 function printStockCard() {
-  window.print();
+  const v = vehicles.find(x => x.id === currentId);
+  if (!v) return;
+  // Prefer official Pentagon "print vehicle" page (accurate stock card)
+  let printUrl = '';
+  if (v.detail_url) {
+    printUrl = v.detail_url.replace(/\/?$/, '') + '/print';
+  }
+  if (printUrl) {
+    window.open(printUrl, '_blank', 'noopener');
+    return;
+  }
+  // Fallback: print only this vehicle's detail card
+  const body = document.getElementById('detailBody');
+  if (!body) { window.print(); return; }
+  const w = window.open('', '_blank');
+  if (!w) { window.print(); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Stock Card ${v.registration || ''}</title>
+    <style>
+      body{font-family:system-ui,sans-serif;padding:1.5rem;color:#111;max-width:800px;margin:0 auto}
+      h1{font-size:1.3rem;margin:0 0 0.5rem}
+      .price{font-size:1.6rem;font-weight:700;color:#1a56a8;margin:0.5rem 0}
+      img{max-width:100%;border-radius:8px}
+      dl{display:grid;grid-template-columns:1fr 1fr;gap:0.35rem 1rem;font-size:0.9rem}
+      dt{color:#666} dd{font-weight:600;margin:0}
+    </style></head><body>`);
+  w.document.write(`<h1>${(v.make||'')} ${(v.model||'')} · ${v.registration||''}</h1>`);
+  if (v.image_url) w.document.write(`<img src="${v.image_url}" alt="">`);
+  w.document.write(`<div class="price">${fmtPrice(v.retail_price)}</div>`);
+  w.document.write(`<p>${formatSpec(v.derivative||'')}</p>`);
+  w.document.write(`<dl>
+    <dt>Colour</dt><dd>${v.colour||'—'}</dd>
+    <dt>Year</dt><dd>${v.model_year||'—'}</dd>
+    <dt>Mileage</dt><dd>${v.mileage!=null?v.mileage.toLocaleString()+' mi':'—'}</dd>
+    <dt>Fuel</dt><dd>${v.fuel||'—'}</dd>
+    <dt>Transmission</dt><dd>${v.transmission||'—'}</dd>
+    <dt>Service</dt><dd>${v.service_history||'—'}</dd>
+  </dl>`);
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(() => { w.print(); }, 400);
 }
+
 
 function editCurrent() {
   const v = vehicles.find(x => x.id === currentId);
@@ -788,10 +851,110 @@ async function loadFromVehiclesJson() {
   }
 }
 
+
+// Live team sync: pull shared notes/edits often; full stock less often
+const AUTO_OVERRIDES_MS = 45000;
+const AUTO_STOCK_MS = 180000;
+let autoRefreshTimer = null;
+
+function applyOverridesToVehicles(overrides) {
+  if (!overrides || typeof overrides !== 'object') return false;
+  let changed = false;
+  vehicles.forEach(v => {
+    const o = overrides[v.registration] || overrides[v.id];
+    if (!o) return;
+    if (o.notes != null && JSON.stringify(o.notes) !== JSON.stringify(v.notes || [])) {
+      v.notes = o.notes; changed = true;
+    }
+    if (o.service_history != null && o.service_history !== v.service_history) {
+      v.service_history = o.service_history; changed = true;
+    }
+    if (o.service_history_notes != null && o.service_history_notes !== v.service_history_notes) {
+      v.service_history_notes = o.service_history_notes; changed = true;
+    }
+    if (o.status_flags != null && JSON.stringify(o.status_flags) !== JSON.stringify(v.status_flags || [])) {
+      v.status_flags = o.status_flags; changed = true;
+    }
+    if (o.special_offer != null && o.special_offer !== v.special_offer) {
+      v.special_offer = o.special_offer; changed = true;
+    }
+    if (o.category && o.category !== v.category) {
+      v.category = o.category; changed = true;
+    }
+  });
+  if (changed) {
+    save();
+    if (currentId) {
+      const still = vehicles.find(x => x.id === currentId);
+      if (still) openDetail(currentId);
+    }
+    renderList();
+  }
+  return changed;
+}
+
+async function pollOverrides() {
+  if (!location.protocol.startsWith('http')) return;
+  try {
+    const res = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const overrides = await res.json();
+    applyOverridesToVehicles(overrides);
+  } catch (_) {}
+}
+
+async function pollStockQuiet() {
+  if (!location.protocol.startsWith('http')) return;
+  try {
+    const res = await fetch('./vehicles.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const list = await res.json();
+    if (!Array.isArray(list) || !list.length) return;
+    // Preserve manual fields from current state / will re-merge overrides after
+    const prevByReg = {};
+    vehicles.forEach(v => { if (v.registration) prevByReg[v.registration] = v; });
+    let overrides = {};
+    try {
+      const or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+      if (or.ok) overrides = await or.json();
+    } catch (_) {}
+    const oldRegs = new Set(vehicles.map(v => v.registration));
+    const newRegs = new Set(list.map(v => v.registration));
+    const changed = oldRegs.size !== newRegs.size || [...newRegs].some(r => !oldRegs.has(r));
+    vehicles = list.map(v => {
+      const prev = prevByReg[v.registration] || {};
+      const o = overrides[v.registration] || overrides[v.id] || {};
+      v.notes = (o.notes != null ? o.notes : null) ?? (prev.notes || []);
+      v.service_history = (o.service_history != null ? o.service_history : null) ?? (prev.service_history || '');
+      v.service_history_notes = (o.service_history_notes != null ? o.service_history_notes : null) ?? (prev.service_history_notes || '');
+      v.status_flags = (o.status_flags != null ? o.status_flags : null) ?? (prev.status_flags || []);
+      v.special_offer = (o.special_offer != null ? o.special_offer : null) ?? (prev.special_offer || v.special_offer || '');
+      if (o.category) v.category = o.category;
+      else if (prev.category && prev.category !== 'Stock') v.category = prev.category;
+      if (prev.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;
+      return v;
+    });
+    save();
+    if (changed) {
+      setSyncStatus(vehicles.length + ' cars · auto-updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}), 'ok');
+      renderList();
+    }
+  } catch (_) {}
+}
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) return;
+  setInterval(pollOverrides, AUTO_OVERRIDES_MS);
+  setInterval(pollStockQuiet, AUTO_STOCK_MS);
+  // first overrides poll after short delay
+  setTimeout(pollOverrides, 8000);
+}
+
 (async function init() {
-  if (await loadFromVehiclesJson()) { renderList(); return; }
+  if (await loadFromVehiclesJson()) { startAutoRefresh(); renderList(); return; }
   if (!vehicles.length) vehicles = IMPORTED_STOCK;
   setSyncStatus(vehicles.length ? vehicles.length + ' cars · local' : 'No data', '');
+  startAutoRefresh();
   renderList();
 })();
 </script>

@@ -1,8 +1,4 @@
 {
-  "TESTCHECK": {
-    "notes": [],
-    "updatedAt": "2026-10-22T09:55:33.432Z"
-  },
   "FN75NTX": {
     "service_history": "",
     "service_history_notes": "",
@@ -84,20 +80,6 @@
       }
     ],
     "updatedAt": "2026-10-22T19:54:32.820Z"
-  },
-  "BD25KUESPOTICAR": {
-    "service_history": "",
-    "service_history_notes": "",
-    "status_flags": [],
-    "special_offer": "",
-    "category": "Stock",
-    "notes": [
-      {
-        "date": "22/10/2026, 20:54:32",
-        "text": "SPOTICAR"
-      }
-    ],
-    "updatedAt": "2026-10-22T19:54:56.378Z"
   },
   "FP76BXZ": {
     "service_history": "",

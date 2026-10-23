@@ -423,16 +423,22 @@ function setSyncStatus(text, cls) {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
-function daysInStock(v) {
-  if (!v.bring_into_stock_date) return null;
-  const d = new Date(v.bring_into_stock_date);
-  return Math.floor((Date.now() - d) / 86400000);
-}
+/* daysInStock removed */
 
 function save() {
   localStorage.setItem('dealerStock', JSON.stringify(vehicles));
 }
 
+
+function cleanModelDisplay(make, model) {
+  let m = (model || '').trim();
+  const mk = (make || '').trim();
+  if (mk && m.toLowerCase().startsWith(mk.toLowerCase() + ' ')) m = m.slice(mk.length).trim();
+  const parts = m.split(/\s+/);
+  const out = [];
+  parts.forEach(p => { if (!out.length || out[out.length-1].toLowerCase() !== p.toLowerCase()) out.push(p); });
+  return out.join(' ');
+}
 
 function formatSpec(d) {
   if (!d) return '';
@@ -489,7 +495,7 @@ function cardHtml(v) {
   return `<div class="vehicle-card" onclick="openDetail('${v.id}')">
     ${img}
     <div class="card-body">
-      <div class="card-top"><span class="model">${v.model || ''}</span><span class="price">${fmtPrice(v.retail_price)}</span></div>
+      <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span><span class="price">${fmtPrice(v.retail_price)}</span></div>
       <div class="spec">${formatSpec(v.derivative || '')}</div>
       <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
       <div class="reg">${v.registration || ''}</div>
@@ -819,8 +825,12 @@ async function loadFromVehiclesJson() {
     } catch (_) {}
     let overrides = {};
     try {
-      const or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
-      if (or.ok) overrides = await or.json();
+      let or = await fetch('/api/save-override?t=' + Date.now(), { cache: 'no-store' }).catch(() => null);
+      if (or && or.ok) overrides = await or.json();
+      else {
+        or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+        if (or.ok) overrides = await or.json();
+      }
     } catch (_) {}
     vehicles = list.map(v => {
       const prev = prevByReg[v.registration] || {};
@@ -853,7 +863,7 @@ async function loadFromVehiclesJson() {
 
 
 // Live team sync: pull shared notes/edits often; full stock less often
-const AUTO_OVERRIDES_MS = 45000;
+const AUTO_OVERRIDES_MS = 20000;
 const AUTO_STOCK_MS = 180000;
 let autoRefreshTimer = null;
 
@@ -896,9 +906,17 @@ function applyOverridesToVehicles(overrides) {
 async function pollOverrides() {
   if (!location.protocol.startsWith('http')) return;
   try {
-    const res = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
-    if (!res.ok) return;
-    const overrides = await res.json();
+    // Prefer API (reads GitHub live — no Vercel CDN wait)
+    let overrides = null;
+    try {
+      const res = await fetch('/api/save-override?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) overrides = await res.json();
+    } catch (_) {}
+    if (!overrides) {
+      const res = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return;
+      overrides = await res.json();
+    }
     applyOverridesToVehicles(overrides);
   } catch (_) {}
 }
@@ -915,8 +933,12 @@ async function pollStockQuiet() {
     vehicles.forEach(v => { if (v.registration) prevByReg[v.registration] = v; });
     let overrides = {};
     try {
-      const or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
-      if (or.ok) overrides = await or.json();
+      let or = await fetch('/api/save-override?t=' + Date.now(), { cache: 'no-store' }).catch(() => null);
+      if (or && or.ok) overrides = await or.json();
+      else {
+        or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+        if (or.ok) overrides = await or.json();
+      }
     } catch (_) {}
     const oldRegs = new Set(vehicles.map(v => v.registration));
     const newRegs = new Set(list.map(v => v.registration));

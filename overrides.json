@@ -32,5 +32,19 @@
       }
     ],
     "updatedAt": "2026-10-22T19:54:32.820Z"
+  },
+  "WP70LPC": {
+    "service_history": "",
+    "service_history_notes": "",
+    "status_flags": [],
+    "special_offer": "",
+    "category": "Stock",
+    "notes": [
+      {
+        "date": "23/10/2026, 10:49:16",
+        "text": "Gearbox Service done Jan 2026"
+      }
+    ],
+    "updatedAt": "2026-10-23T09:49:17.088Z"
   }
 }

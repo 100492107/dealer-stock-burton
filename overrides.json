@@ -46,5 +46,16 @@
       }
     ],
     "updatedAt": "2026-10-23T09:49:17.088Z"
+  },
+  "DF65CUK": {
+    "service_history": "",
+    "service_history_notes": "",
+    "status_flags": [
+      "Deposit Taken"
+    ],
+    "special_offer": "",
+    "category": "Stock",
+    "notes": [],
+    "updatedAt": "2026-10-23T14:49:12.760Z"
   }
 }

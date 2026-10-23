@@ -12,8 +12,22 @@ MANUAL_FIELDS = ('notes', 'service_history', 'service_history_notes', 'status_fl
 
 def fix_make(m):
     m = (m or '').replace('-', ' ').strip()
-    mapping = {'ds': 'DS', 'byd': 'BYD', 'bmw': 'BMW', 'seat': 'SEAT', 'cupra': 'CUPRA', 'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz'}
+    mapping = {'ds': 'DS', 'byd': 'BYD', 'bmw': 'BMW', 'seat': 'SEAT', 'cupra': 'CUPRA',
+               'mercedes benz': 'Mercedes-Benz', 'mercedes-benz': 'Mercedes-Benz'}
     return mapping.get(m.lower(), m.title())
+
+def clean_model(make, model, derivative):
+    m = (model or '').strip()
+    mk = (make or '').strip()
+    if not m: return m
+    if mk and m.lower().startswith(mk.lower() + ' '):
+        m = m[len(mk):].strip()
+    parts = m.split()
+    out = []
+    for p in parts:
+        if not out or out[-1].lower() != p.lower():
+            out.append(p)
+    return ' '.join(out)
 
 def natural_model_key(model):
     m = model or ''
@@ -23,13 +37,19 @@ def natural_model_key(model):
 def tidy_title(title):
     if not title: return ''
     s = re.sub(r'\s+', ' ', title).strip()
-    reps = [(r'\bPuretech\b', 'PureTech'), (r'\bTfsi\b', 'TFSI'), (r'\bTsi\b', 'TSI'), (r'\bTdi\b', 'TDI'), (r'\bHdi\b', 'HDi'), (r'\bCrdi\b', 'CRDi'), (r'\bTce\b', 'TCe'), (r'\bMhev\b', 'MHEV'), (r'\bDm I\b', 'DM-i'), (r'\bEat6\b', 'EAT6'), (r'\bEat8\b', 'EAT8'), (r'\bCvt\b', 'CVT'), (r'\bAwd\b', 'AWD'), (r'(\d)\s*kwh\b', r'\1 kWh'), (r'\bPs\b', 'PS'), (r'\bBhp\b', 'BHP'), (r'\bEhybrid\b', 'e-Hybrid'), (r'\bE Tech\b', 'E-Tech')]
+    reps = [(r'\bPuretech\b', 'PureTech'), (r'\bTfsi\b', 'TFSI'), (r'\bTsi\b', 'TSI'),
+            (r'\bTdi\b', 'TDI'), (r'\bHdi\b', 'HDi'), (r'\bCrdi\b', 'CRDi'), (r'\bTce\b', 'TCe'),
+            (r'\bMhev\b', 'MHEV'), (r'\bDm I\b', 'DM-i'), (r'\bEat6\b', 'EAT6'), (r'\bEat8\b', 'EAT8'),
+            (r'\bCvt\b', 'CVT'), (r'\bAwd\b', 'AWD'), (r'(\d)\s*kwh\b', r'\1 kWh'), (r'\bPs\b', 'PS'),
+            (r'\bBhp\b', 'BHP'), (r'\bEhybrid\b', 'e-Hybrid'), (r'\bE Tech\b', 'E-Tech')]
     for pat, rep in reps:
         s = re.sub(pat, rep, s, flags=re.I)
     return s
 
 def http_get(params):
-    req = Request(BASE + '?' + params, headers={'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.pentagon-group.co.uk/used-cars-in-burton'})
+    req = Request(BASE + '?' + params, headers={
+        'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest',
+        'Referer': 'https://www.pentagon-group.co.uk/used-cars-in-burton'})
     return unescape(urlopen(req, timeout=90).read().decode('utf-8', errors='replace'))
 
 def extract_reg(body):
@@ -51,12 +71,33 @@ def parse_blocks(html, default_category='Stock'):
         reg = extract_reg(body)
         if not reg: continue
         colour = ((re.search(r'data-colour="([^"]*)"', attrs) or [None, ''])[1] or '').title()
-        href_m = re.search(r'href="(/used-cars/[^"]+)"', body)
+        href_m = re.search(r'href="(/(?:used-cars|used-vans|new-cars-in-stock)/[^"]+)"', body)
         href = (href_m.group(1) if href_m else '').replace('/print', '')
         parts = href.strip('/').split('/')
-        make = fix_make(parts[1] if len(parts) > 1 else 'Unknown')
+        make = fix_make(parts[1] if len(parts) > 1 else '')
         model = (parts[2] if len(parts) > 2 else '').replace('-', ' ').title()
         if model.lower().startswith('ds '): model = 'DS ' + model[3:]
+        if 'cupra' in (make or '').lower(): make = 'CUPRA'
+        if not make or make == 'Unknown' or not model:
+            smalls = re.findall(r'<small[^>]*class="ti-sub"[^>]*>(.*?)</small>', body, re.S)
+            labels = [re.sub(r'<[^>]+>', '', s).strip() for s in smalls]
+            labels = [x for x in labels if x and x.lower() not in ('pcp from', 'lp from', 'hp from', 'our price')]
+            if labels:
+                lab = labels[0]
+                if not model: model = lab.title()
+                if not make or make == 'Unknown':
+                    known = {'BYD','BMW','AUDI','PEUGEOT','VAUXHALL','CITROEN','RENAULT','HYUNDAI','KIA','CUPRA','VOLKSWAGEN','VW','TOYOTA','NISSAN','FORD','MERCEDES','SEAT','SKODA','DS','FIAT','MG','TESLA','MINI','MITSUBISHI'}
+                    words = lab.replace('-', ' ').split()
+                    if words and words[0].upper() in known:
+                        make = fix_make(words[0])
+                        if len(words) > 1: model = ' '.join(words[1:]).title()
+                    else:
+                        loc = re.search(r'<b class="ti">([^<]*)</b>', body)
+                        if loc:
+                            brand = loc.group(1).replace('Burton Upon Trent', '').strip()
+                            if brand: make = fix_make(brand.split()[0])
+        if not make: make = 'Unknown'
+        model = clean_model(make, model or 'Unknown', '') or 'Unknown'
         title_m = re.search(r'<h[34][^>]*>(.*?)</h[34]>', body, re.S)
         title = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', title_m.group(1) if title_m else '')).strip()
         derivative = tidy_title(title)
@@ -72,13 +113,17 @@ def parse_blocks(html, default_category='Stock'):
         miles = int(miles_m.group(1).replace(',', '')) if miles_m else None
         year_m = re.search(r'\|\s*(20\d{2})\b', text) or re.search(r'\b(20\d{2})\b', text)
         year = int(year_m.group(1)) if year_m else None
-        fuel = 'Plug-in Hybrid' if re.search(r'plug.?in\s+hybrid', text, re.I) else ('Hybrid' if re.search(r'\bhybrid\b', text, re.I) else ((re.search(r'\b(Petrol|Diesel|Electric)\b', text, re.I) or [None, ''])[1].title() if re.search(r'\b(Petrol|Diesel|Electric)\b', text, re.I) else ''))
+        if re.search(r'plug.?in\s+hybrid', text, re.I): fuel = 'Plug-in Hybrid'
+        elif re.search(r'\bhybrid\b', text, re.I): fuel = 'Hybrid'
+        else:
+            ft = re.search(r'\b(Petrol|Diesel|Electric)\b', text, re.I)
+            fuel = ft.group(1).title() if ft else ''
         trans = 'Automatic' if re.search(r'\b(Automatic|CVT|S tronic|EAT|DSG|Auto)\b', text, re.I) else ('Manual' if re.search(r'\bManual\b', text, re.I) else '')
         body_type = next((b for b in ('Hatchback','Estate','Saloon','SUV','Coupe','Convertible','MPV','Fastback','Van') if b.lower() in (title or href or text).lower()), '')
         dm = re.search(r'(\d)\s*dr', title or href or '', re.I)
         doors = int(dm.group(1)) if dm else None
         flags = ['Awaiting Prep'] if 'photos available soon' in text.lower() else []
-        vehicles.append({'id': reg, 'registration': reg, 'make': make, 'model': model or 'Unknown', 'derivative': derivative, 'mileage': miles, 'doors': doors, 'transmission': trans, 'fuel': fuel, 'body_type': body_type, 'model_year': year, 'colour': colour, 'category': default_category, 'retail_price': price, 'bring_into_stock_date': date.today().isoformat(), 'service_history': '', 'service_history_notes': '', 'status_flags': flags, 'notes': [], 'special_offer': '', 'image_url': image_url, 'detail_url': ('https://www.pentagon-group.co.uk' + href) if href else '', 'peg_number': vid, 'source': 'pentagon-burton'})
+        vehicles.append({'id': reg, 'registration': reg, 'make': make, 'model': model, 'derivative': derivative, 'mileage': miles, 'doors': doors, 'transmission': trans, 'fuel': fuel, 'body_type': body_type, 'model_year': year, 'colour': colour, 'category': default_category, 'retail_price': price, 'bring_into_stock_date': date.today().isoformat(), 'service_history': '', 'service_history_notes': '', 'status_flags': flags, 'notes': [], 'special_offer': '', 'image_url': image_url, 'detail_url': ('https://www.pentagon-group.co.uk' + href) if href else '', 'peg_number': vid, 'source': 'pentagon-burton'})
     return vehicles
 
 def fetch_live():
@@ -133,10 +178,14 @@ def main():
         if reg not in live_regs:
             cat = old.get('category') or 'Stock'
             if cat in ('Stock', 'Demonstrators', 'Pre-reg', 'Commercials', 'Arriving Soon'):
-                old['category'] = 'Sold'; old['sold_date'] = date.today().isoformat(); sold_count += 1
-            apply_manual(old, old, overrides); result.append(old)
+                old['category'] = 'Sold'
+                old['sold_date'] = date.today().isoformat()
+                sold_count += 1
+            apply_manual(old, old, overrides)
+            result.append(old)
     for reg, v in live_by_reg.items():
-        apply_manual(v, prev_by_reg.get(reg), overrides); result.append(v)
+        apply_manual(v, prev_by_reg.get(reg), overrides)
+        result.append(v)
     result.sort(key=lambda x: (0 if x.get('category') in ('Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon') else 1, (x.get('make') or '').lower(), natural_model_key(x.get('model') or ''), x.get('retail_price') if x.get('retail_price') is not None else 999999999))
     (DIR / 'vehicles.json').write_text(json.dumps(result, separators=(',', ':')))
     imgs = {v['registration']: v['image_url'] for v in result if v.get('image_url')}

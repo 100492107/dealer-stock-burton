@@ -24,7 +24,10 @@
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.45; min-height: 100vh; }
 
 .top-nav { background: var(--nav); color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; height: 52px; position: sticky; top: 0; z-index: 50; }
-.brand { font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; white-space: nowrap; }
+.brand { font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; white-space: nowrap; background: none; border: none; color: #fff; cursor: pointer; padding: 0; font-family: inherit; }
+.brand:hover span { color: #bae6fd; }
+.btn-clear-search { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); padding: 0.45rem 0.85rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.btn-clear-search:hover { background: var(--primary-dim); }
 .brand span { color: #7dd3fc; font-weight: 500; font-size: 0.8rem; margin-left: 0.4rem; }
 .nav-links { display: flex; gap: 2px; flex-wrap: wrap; overflow-x: auto; }
 .nav-links button { background: none; border: none; color: #a8b4c4; padding: 0.45rem 0.7rem; font-size: 0.82rem; font-weight: 500; border-radius: 4px; cursor: pointer; white-space: nowrap; }
@@ -200,7 +203,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
 <body>
 
 <nav class="top-nav">
-  <div class="brand">Dealer Stock <span>Burton</span></div>
+  <button type="button" class="brand" onclick="goHome()" title="Back to all stock">Dealer Stock <span>Burton</span></button>
   <div class="nav-links" id="navLinks">
     <button data-cat="Stock" class="active">Stock</button>
     <button data-cat="Demonstrators">Demonstrators</button>
@@ -222,8 +225,9 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   <div class="page-header">
     <h1 id="pageTitle">Stock <span class="count" id="countLabel">(0)</span></h1>
     <div class="search-box">
-      <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…">
+      <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…" onkeydown="if(event.key==='Enter'){renderList()}">
       <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
+      <button type="button" class="btn-clear-search" id="clearSearchBtn" onclick="goHome()" style="display:none">✕ All stock</button>
     </div>
   </div>
   
@@ -414,6 +418,28 @@ function setLastSynced(isoOrText) {
 }
 
 
+
+function goHome() {
+  currentCat = 'Stock';
+  document.querySelectorAll('#navLinks button').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-cat') === 'Stock');
+  });
+  const s = document.getElementById('searchInput');
+  if (s) s.value = '';
+  const fuel = document.getElementById('filterFuel');
+  if (fuel) fuel.value = '';
+  const minP = document.getElementById('filterMinPrice');
+  if (minP) minP.value = '';
+  const maxP = document.getElementById('filterMaxPrice');
+  if (maxP) maxP.value = '';
+  const sort = document.getElementById('sortBy');
+  if (sort) sort.value = 'default';
+  closeModal();
+  closeForm();
+  renderList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function setSyncStatus(text, cls) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
@@ -539,6 +565,15 @@ function renderList() {
   else if (sortBy === 'year-asc') list = list.slice().sort((a,b) => (a.model_year||0) - (b.model_year||0));
 
   document.getElementById('countLabel').textContent = '(' + list.length + ')';
+  const hasFilter = !!(document.getElementById('searchInput').value || '').trim()
+    || !!(document.getElementById('filterFuel') || {}).value
+    || !!(document.getElementById('filterMinPrice') || {}).value
+    || !!(document.getElementById('filterMaxPrice') || {}).value
+    || ((document.getElementById('sortBy') || {}).value || 'default') !== 'default'
+    || currentCat !== 'Stock';
+  const clr = document.getElementById('clearSearchBtn');
+  if (clr) clr.style.display = hasFilter ? 'inline-flex' : 'none';
+
   document.getElementById('pageTitle').childNodes[0].textContent = currentCat + ' ';
   const area = document.getElementById('listArea');
   if (!list.length) {

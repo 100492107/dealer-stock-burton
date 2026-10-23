@@ -107,5 +107,16 @@
     "category": "Pre-reg",
     "notes": [],
     "updatedAt": "2026-10-22T19:59:02.234Z"
+  },
+  "DF65CUK": {
+    "service_history": "",
+    "service_history_notes": "",
+    "status_flags": [
+      "Deposit Taken"
+    ],
+    "special_offer": "",
+    "category": "Stock",
+    "notes": [],
+    "updatedAt": "2026-10-23T08:06:05.083Z"
   }
 }

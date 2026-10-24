@@ -7,7 +7,13 @@
   "FP76BXZ": {
     "category": "Pre-reg",
     "notes": [],
-    "updatedAt": "2026-10-22T19:59:02.234Z"
+    "updatedAt": "2026-10-24T15:57:39.152Z",
+    "service_history": "",
+    "service_history_notes": "",
+    "status_flags": [
+      "Deposit Taken"
+    ],
+    "special_offer": ""
   },
   "DN21XGO": {
     "service_history": "Full Manufacturer",

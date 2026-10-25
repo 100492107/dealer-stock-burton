@@ -224,7 +224,8 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   </div>
   <div class="nav-right">
     <span class="sync-status" id="syncStatus">Loading…</span>
-    <button class="btn-ghost" onclick="location.reload()" title="Reload stock from server">↻ Refresh</button>
+    <button type="button" class="btn-ghost" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ Sync stock</button>
+    <button type="button" class="btn-ghost" onclick="location.reload()" title="Reload page">↻ Refresh</button>
     <button type="button" onclick="openForm()">+ Add vehicle</button>
   </div>
 </nav>
@@ -426,6 +427,29 @@ function setLastSynced(isoOrText) {
 }
 
 
+
+
+async function syncStockNow() {
+  if (!location.protocol.startsWith('http')) {
+    alert('Sync only works on the live site.');
+    return;
+  }
+  setSyncStatus('Syncing from Pentagon…', '');
+  try {
+    const res = await fetch('/api/sync-stock', { method: 'POST', cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    setSyncStatus(
+      (data.inStock || data.live || '?') + ' in stock · ' + (data.sold || 0) + ' sold · synced ' +
+      new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      'ok'
+    );
+    // Reload stock after Vercel/GitHub settle briefly
+    setTimeout(() => location.reload(), 2500);
+  } catch (e) {
+    setSyncStatus('Sync failed: ' + (e.message || e), 'err');
+  }
+}
 
 function goHome() {
   currentCat = 'Stock';

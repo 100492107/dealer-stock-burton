@@ -203,6 +203,196 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   .top-nav, .no-print, .overlay { display: none !important; }
   body { background: #fff; }
 }
+
+/* ===== Mobile polish ===== */
+@media (max-width: 720px) {
+  :root { --nav-h: auto; }
+  body { padding-bottom: env(safe-area-inset-bottom, 0); }
+  .top-nav {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 52px;
+    padding: 0.55rem 0.65rem;
+    padding-top: max(0.55rem, env(safe-area-inset-top));
+    gap: 0.45rem;
+    align-items: center;
+  }
+  .brand { font-size: 0.9rem; }
+  .brand-logo { width: 32px; height: 32px; }
+  .nav-links {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.35rem;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links button {
+    flex: 0 0 auto;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.82rem;
+    min-height: 40px;
+    border-radius: 999px;
+  }
+  .nav-right {
+    margin-left: auto;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .nav-right .btn-ghost, .nav-right .btn-primary {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.78rem;
+    min-height: 40px;
+  }
+  .sync-status { display: none; } /* save space; still updates on desktop */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem 0.75rem 0.5rem;
+  }
+  .page-header h1 { font-size: 1.2rem; }
+  .search-box {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .search-box input {
+    flex: 1 1 100%;
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS zoom */
+    border-radius: 10px;
+  }
+  .search-box .btn, .search-box .btn-clear-search {
+    min-height: 44px;
+    flex: 1 1 auto;
+    font-size: 0.9rem;
+  }
+  .filters-bar {
+    padding: 0.7rem 0.75rem;
+    gap: 0.5rem;
+  }
+  .filters-bar .filter-row {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .filters-bar label {
+    flex: 1 1 45%;
+    min-width: 0;
+    font-size: 0.75rem;
+  }
+  .filters-bar select, .filters-bar input {
+    width: 100%;
+    min-height: 40px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  .filters-bar .btn {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 0.25rem !important;
+  }
+  .vehicle-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem 1.5rem;
+  }
+  .vehicle-card {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15,39,68,0.06);
+  }
+  .vehicle-card .card-img {
+    aspect-ratio: 16/10;
+  }
+  .vehicle-card .card-body {
+    padding: 0.75rem 0.85rem 0.9rem;
+  }
+  .vehicle-card .card-title {
+    font-size: 1rem;
+  }
+  .vehicle-card .card-price {
+    font-size: 1.1rem;
+  }
+  .vehicle-card .card-meta {
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+  .brand-group { margin-bottom: 0.5rem; }
+  .brand-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.95rem;
+  }
+  .model-header {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  .detail-grid { grid-template-columns: 1fr; }
+  .modal, .modal-form {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+  .overlay {
+    align-items: stretch;
+    padding: 0;
+  }
+  .modal-header, .form-header {
+    padding: 0.75rem 0.9rem;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+  }
+  .modal-body, .form-body {
+    padding: 0.85rem 0.9rem 2rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .btn-edit, .btn-save, .btn-primary, .btn-secondary {
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+  }
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 0.75rem 0.9rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .form-actions .btn { flex: 1; }
+  .form-grid { grid-template-columns: 1fr; }
+  #syncStatusMobile {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 0 0.75rem 0.35rem;
+  }
+}
+@media (min-width: 721px) {
+  #syncStatusMobile { display: none; }
+}
+@media (max-width: 420px) {
+  .vehicle-grid { grid-template-columns: 1fr; }
+  .nav-right .btn-ghost span.hide-xs { display: none; }
+}
+
+@media print {
+  .top-nav, .no-print, .overlay { display: none !important; }
+  body { background: #fff; }
+}
 </style>
 </head>
 <body>
@@ -224,7 +414,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   </div>
   <div class="nav-right">
     <span class="sync-status" id="syncStatus">Loading…</span>
-    <button type="button" class="btn-ghost" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ Sync stock</button>
+    <button type="button" class="btn-ghost" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ <span class="hide-xs">Sync </span>stock</button>
     <button type="button" class="btn-ghost" onclick="location.reload()" title="Reload page">↻ Refresh</button>
     <button type="button" onclick="openForm()">+ Add vehicle</button>
   </div>
@@ -429,27 +619,82 @@ function setLastSynced(isoOrText) {
 
 
 
-async function syncStockNow() {
-  if (!location.protocol.startsWith('http')) {
-    alert('Sync only works on the live site.');
-    return;
-  }
-  setSyncStatus('Syncing from Pentagon…', '');
+
+/* ===== Reliable scheduled stock sync ===== */
+const SYNC_KEY = 'dsb_last_sync_ok';
+const SYNC_MIN_GAP_MS = 3 * 60 * 60 * 1000; // don't auto more than every 3h
+const SYNC_BUSINESS_POLL_MS = 30 * 60 * 1000; // while tab open in business hours
+
+function ukHourNow() {
   try {
-    const res = await fetch('/api/sync-stock', { method: 'POST', cache: 'no-store' });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-    setSyncStatus(
-      (data.inStock || data.live || '?') + ' in stock · ' + (data.sold || 0) + ' sold · synced ' +
-      new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      'ok'
-    );
-    // Reload stock after Vercel/GitHub settle briefly
-    setTimeout(() => location.reload(), 2500);
-  } catch (e) {
-    setSyncStatus('Sync failed: ' + (e.message || e), 'err');
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: 'numeric', hour12: false }).formatToParts(new Date());
+    return parseInt(parts.find(p => p.type === 'hour').value, 10);
+  } catch (_) {
+    return new Date().getHours();
   }
 }
+
+function isUkBusinessHours() {
+  const h = ukHourNow();
+  return h >= 8 && h < 19;
+}
+
+function lastSyncOk() {
+  const t = parseInt(localStorage.getItem(SYNC_KEY) || '0', 10);
+  return t || 0;
+}
+
+function markSyncOk() {
+  localStorage.setItem(SYNC_KEY, String(Date.now()));
+}
+
+async function syncStockNow(opts) {
+  opts = opts || {};
+  const silent = !!opts.silent;
+  if (!location.protocol.startsWith('http')) {
+    if (!silent) alert('Sync only works on the live site.');
+    return false;
+  }
+  if (!silent) setSyncStatus('Syncing from Pentagon…', '');
+  try {
+    const res = await fetch('/api/sync-stock?t=' + Date.now(), { method: 'POST', cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    markSyncOk();
+    const msg = (data.inStock || data.live || '?') + ' in stock · ' + (data.sold || 0) + ' sold · ' +
+      new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    setSyncStatus(msg, 'ok');
+    const mob = document.getElementById('syncStatusMobile');
+    if (mob) mob.textContent = msg;
+    if (!silent) {
+      setTimeout(() => location.reload(), 2000);
+    } else if (data.newlySold > 0 || data.returned > 0) {
+      // Stock changed — soft reload vehicles
+      setTimeout(() => location.reload(), 1500);
+    }
+    return true;
+  } catch (e) {
+    const err = 'Sync failed: ' + (e.message || e);
+    setSyncStatus(err, 'err');
+    const mob = document.getElementById('syncStatusMobile');
+    if (mob) mob.textContent = err;
+    return false;
+  }
+}
+
+async function maybeAutoSync() {
+  if (!location.protocol.startsWith('http')) return;
+  if (!isUkBusinessHours()) return;
+  if (Date.now() - lastSyncOk() < SYNC_MIN_GAP_MS) return;
+  await syncStockNow({ silent: true });
+}
+
+function startReliableSync() {
+  // After first load settles
+  setTimeout(maybeAutoSync, 8000);
+  setInterval(maybeAutoSync, SYNC_BUSINESS_POLL_MS);
+}
+
 
 function goHome() {
   currentCat = 'Stock';
@@ -474,9 +719,12 @@ function goHome() {
 
 function setSyncStatus(text, cls) {
   const el = document.getElementById('syncStatus');
-  if (!el) return;
-  el.textContent = text;
-  el.className = 'sync-status' + (cls ? ' ' + cls : '');
+  if (el) {
+    el.textContent = text;
+    el.className = 'sync-status' + (cls ? ' ' + cls : '');
+  }
+  const mob = document.getElementById('syncStatusMobile');
+  if (mob) mob.textContent = text || '';
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -1040,10 +1288,11 @@ function startAutoRefresh() {
 }
 
 (async function init() {
-  if (await loadFromVehiclesJson()) { startAutoRefresh(); renderList(); return; }
+  if (await loadFromVehiclesJson()) { startAutoRefresh(); startReliableSync(); renderList(); return; }
   if (!vehicles.length) vehicles = IMPORTED_STOCK;
   setSyncStatus(vehicles.length ? vehicles.length + ' cars · local' : 'No data', '');
   startAutoRefresh();
+  startReliableSync();
   renderList();
 })();
 </script>

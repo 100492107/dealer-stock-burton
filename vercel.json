@@ -8,5 +8,12 @@
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     }
+  ],
+  "crons": [
+    { "path": "/api/sync-stock", "schedule": "0 8 * * *" },
+    { "path": "/api/sync-stock", "schedule": "0 9 * * *" },
+    { "path": "/api/sync-stock", "schedule": "0 12 * * *" },
+    { "path": "/api/sync-stock", "schedule": "0 17 * * *" },
+    { "path": "/api/sync-stock", "schedule": "0 18 * * *" }
   ]
 }

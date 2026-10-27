@@ -3,12 +3,1212 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
 <title>Dealer Stock Manager · Burton</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='15' fill='%231a56a8'/><text x='16' y='21' text-anchor='middle' fill='white' font-size='14' font-family='sans-serif'>DS</text></svg>">
+<style>
+:root {
+  --bg: #f0f3f8;
+  --bg-soft: #e8edf5;
+  --card: #ffffff;
+  --border: #d5dce8;
+  --text: #152033;
+  --muted: #64748b;
+  --primary: #1a56a8;
+  --primary-h: #134785;
+  --primary-dim: #e8f0fb;
+  --accent: #0d9488;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --nav: #0f172a;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-hover: 0 10px 28px rgba(15, 23, 42, 0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.45; min-height: 100vh;
+}
+
+/* Nav */
+.top-nav {
+  background: var(--nav); color: #fff;
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0 1.25rem; height: 56px;
+  position: sticky; top: 0; z-index: 50;
+}
+.brand {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em;
+  background: none; border: none; color: #fff; cursor: pointer;
+  padding: 0; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+}
+.brand:hover span { color: #7dd3fc; }
+.brand-logo { width: 30px; height: 30px; border-radius: 50%; display: block; flex-shrink: 0; }
+.brand-text { display: inline; }
+.brand span { color: #7dd3fc; font-weight: 500; font-size: 0.8rem; margin-left: 0.15rem; }
+.nav-links {
+  display: flex; align-items: center; gap: 0.15rem;
+  flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links button {
+  background: none; border: none; color: #94a3b8;
+  padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 500;
+  border-radius: 6px; cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+.nav-links button:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.nav-links button.active { color: #fff; background: var(--primary); }
+.nav-right {
+  display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0; margin-left: auto;
+}
+.sync-status, .nav-right .sync-status {
+  font-size: 0.72rem; color: #94a3b8; max-width: 200px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sync-status.ok, .nav-right .sync-status.ok { color: #86efac; }
+.sync-status.err, .nav-right .sync-status.err { color: #fca5a5; }
+.btn-ghost {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+  color: #e2e8f0; padding: 0.4rem 0.7rem; border-radius: 6px;
+  font-size: 0.78rem; font-weight: 500; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.nav-right > button:last-child {
+  background: var(--primary); border: none; color: #fff;
+  padding: 0.42rem 0.85rem; border-radius: 6px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.nav-right > button:last-child:hover { background: var(--primary-h); }
+
+/* Layout */
+.container { max-width: 1280px; margin: 0 auto; padding: 1.25rem 1.5rem 2.5rem; }
+.page-header {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.page-header h1 { font-size: 1.35rem; font-weight: 700; }
+.page-header .count { font-weight: 500; color: var(--muted); font-size: 0.95rem; }
+.search-box { display: flex; gap: 0.4rem; align-items: center; flex: 1; max-width: 460px; min-width: 200px; }
+.search-box input {
+  flex: 1; min-width: 0; padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; background: #fff;
+}
+.search-box input:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,168,0.15);
+}
+.btn-clear-search {
+  background: #fff; color: var(--primary); border: 1.5px solid var(--primary);
+  padding: 0.5rem 0.85rem; border-radius: 8px; font-weight: 600;
+  font-size: 0.85rem; cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+.btn-clear-search:hover { background: var(--primary-dim); }
+.btn, .btn-primary, .btn-secondary, .btn-danger {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.5rem 0.95rem; border-radius: 8px; font-size: 0.88rem;
+  font-weight: 600; cursor: pointer; border: none; font-family: inherit; min-height: 40px;
+}
+.btn-primary, .btn.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-h); }
+.btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg-soft); }
+.btn-danger { background: #fff; color: var(--danger); border: 1.5px solid #fca5a5; }
+.btn-lg { padding: 0.7rem 1.4rem; font-size: 1rem; min-height: 48px; min-width: 120px; }
+
+/* Filters */
+.filters-bar {
+  display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; align-items: flex-end;
+  margin-bottom: 1.15rem; padding: 0.85rem 1rem;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.filters-bar .filter-row { display: flex; flex-wrap: wrap; gap: 0.65rem 0.85rem; align-items: flex-end; flex: 1; }
+.filters-bar label {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em;
+}
+.filters-bar select, .filters-bar input {
+  padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 7px;
+  font-size: 0.88rem; background: #fff; color: var(--text); min-width: 110px; font-family: inherit;
+}
+.filters-bar select:focus, .filters-bar input:focus {
+  outline: none; border-color: var(--primary);
+}
+#syncStatusMobile { display: none; font-size: 0.75rem; color: var(--muted); padding: 0 0 0.5rem; }
+
+/* Brand / model headings (actual JS class names) */
+.make-section { margin-bottom: 1.75rem; }
+.make-title {
+  font-size: 1.05rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--primary); border-bottom: 2px solid var(--primary);
+  padding-bottom: 0.4rem; margin-bottom: 0.75rem;
+}
+.model-title {
+  font-size: 0.88rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+  color: var(--text); margin: 1rem 0 0.5rem; padding: 0.4rem 0.7rem;
+  background: var(--bg-soft); border-radius: 6px; border-left: 3px solid var(--accent);
+}
+.model-title .model-count {
+  font-weight: 400; color: var(--muted); font-size: 0.8rem;
+  letter-spacing: 0; text-transform: none;
+}
+
+/* Cards */
+.vehicle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.vehicle-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; cursor: pointer; display: flex; flex-direction: column;
+  box-shadow: var(--shadow);
+  transition: box-shadow .18s, transform .18s, border-color .18s;
+}
+.vehicle-card:hover {
+  box-shadow: var(--shadow-hover); transform: translateY(-2px); border-color: #b8c7de;
+}
+.card-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--bg-soft); display: block; }
+.card-img-placeholder {
+  width: 100%; aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #e8edf5, #dce4f0);
+  display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.8rem;
+}
+.card-body { padding: 0.75rem 0.85rem 0.9rem; display: flex; flex-direction: column; gap: 0.2rem; flex: 1; }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.4rem; }
+.card-top .model { font-weight: 700; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.card-top .price { font-weight: 700; font-size: 1.05rem; color: var(--primary); white-space: nowrap; }
+.spec { font-size: 0.78rem; color: var(--muted); line-height: 1.3; }
+.meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; gap: 0.35rem; }
+.reg { font-weight: 700; letter-spacing: 0.5px; font-size: 0.85rem; margin-top: 0.25rem; }
+.colour { font-size: 0.75rem; color: var(--muted); }
+.flags { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.3rem; }
+.flag { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 3px; background: var(--bg-soft); color: var(--muted); font-weight: 600; }
+.badge-service {
+  display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem;
+  border-radius: 4px; margin-top: 0.25rem; letter-spacing: 0.02em;
+}
+.badge-fsh { background: #dcfce7; color: #166534; }
+.badge-mfr { background: #dbeafe; color: #1e40af; }
+.badge-part { background: #fef3c7; color: #92400e; }
+.badge-none { background: #f3f4f6; color: #6b7280; }
+.empty, .empty-state {
+  text-align: center; padding: 3rem 1rem; color: var(--muted);
+  background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius);
+}
+
+/* Modal */
+.overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+  z-index: 100; display: flex; align-items: flex-start; justify-content: center;
+  padding: 1.5rem 1rem; overflow-y: auto; backdrop-filter: blur(2px);
+}
+.overlay[hidden] { display: none !important; }
+.modal {
+  background: var(--card); border-radius: 12px; width: 100%; max-width: 920px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 1px solid var(--border);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.9rem 1.15rem; border-bottom: 1px solid var(--border);
+}
+.modal-header h2 { font-size: 1.1rem; }
+.modal-body { padding: 1.15rem; }
+.modal-close {
+  background: none; border: none; font-size: 1.6rem; cursor: pointer; color: var(--muted);
+  line-height: 1; width: 42px; height: 42px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: var(--bg-soft); color: var(--text); }
+.modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.detail-grid { display: grid; grid-template-columns: 1fr 260px; gap: 1.15rem; }
+.photo-box { border-radius: 8px; overflow: hidden; background: var(--bg-soft); margin-bottom: 0.9rem; border: 1px solid var(--border); }
+.photo-box img { width: 100%; display: block; aspect-ratio: 16/10; object-fit: cover; }
+.photo-box .no-photo { height: 160px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.price-lg { font-size: 1.65rem; font-weight: 700; color: var(--primary); margin: 0.5rem 0; }
+.info-box { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; margin-bottom: 0.8rem; }
+.info-box h3 { font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.info-box dl { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 0.7rem; font-size: 0.82rem; }
+.info-box dt { color: var(--muted); }
+.info-box dd { font-weight: 500; }
+.notes-area { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.notes-area h3 { margin-bottom: 0.6rem; font-size: 0.95rem; }
+.note-form { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+.note-form textarea {
+  flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px;
+  font-family: inherit; font-size: 0.85rem; resize: vertical; min-height: 56px;
+}
+.note-item {
+  background: var(--bg-soft); border-left: 3px solid var(--primary);
+  padding: 0.55rem 0.8rem; border-radius: 0 6px 6px 0; margin-bottom: 0.45rem;
+}
+.note-date { font-size: 0.7rem; color: var(--muted); }
+.note-text { font-size: 0.85rem; white-space: pre-wrap; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.form-row { margin-bottom: 0.7rem; }
+.form-row label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 0.2rem; }
+.form-row input, .form-row select, .form-row textarea {
+  width: 100%; padding: 0.42rem 0.6rem; border: 1px solid var(--border); border-radius: 5px;
+  font-size: 0.88rem; font-family: inherit; background: #fff;
+}
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; }
+fieldset { border: 1px solid var(--border); border-radius: 7px; padding: 0.7rem 0.9rem; margin: 0.9rem 0; }
+legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
+.check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.25rem 0.7rem; }
+.form-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 1rem; }
+.form-actions .btn { min-width: 110px; }
+.btn-edit, .btn-save {
+  min-height: 42px; padding: 0.55rem 1.15rem; font-size: 0.9rem; font-weight: 600;
+  border-radius: 8px; cursor: pointer; border: none; font-family: inherit;
+}
+.btn-edit { background: var(--primary-dim); color: var(--primary); }
+.btn-save { background: var(--primary); color: #fff; }
+.hide-xs { }
+
+@media (min-width: 1100px) {
+  .vehicle-grid { grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 1.1rem; }
+  .container { padding: 1.5rem 2rem 3rem; }
+}
+
+@media (max-width: 720px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .top-nav {
+    flex-wrap: wrap; height: auto; min-height: 52px;
+    padding: 0.55rem 0.7rem; gap: 0.45rem;
+  }
+  .nav-links { order: 3; width: 100%; }
+  .nav-links button { padding: 0.5rem 0.75rem; min-height: 40px; border-radius: 999px; }
+  .sync-status, .nav-right .sync-status { display: none; }
+  #syncStatusMobile { display: block; }
+  .container { padding: 0.85rem 0.75rem 2rem; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: none; width: 100%; flex-wrap: wrap; }
+  .search-box input { flex: 1 1 100%; min-height: 44px; font-size: 16px; }
+  .search-box .btn, .btn-clear-search { min-height: 44px; }
+  .filters-bar label { flex: 1 1 42%; min-width: 0; }
+  .filters-bar select, .filters-bar input { width: 100%; min-width: 0; min-height: 40px; font-size: 16px; }
+  .vehicle-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .make-title { font-size: 0.95rem; }
+  .overlay { padding: 0; align-items: stretch; }
+  .modal { max-width: 100%; border-radius: 0; min-height: 100%; }
+}
+@media (max-width: 420px) {
+  .hide-xs { display: none !important; }
+}
+@media print {
+  .top-nav, .no-print, .overlay, .filters-bar, .search-box { display: none !important; }
+  body { background: #fff; }
+}
+
+</style>
+
 </head>
 <body>
-<p style="padding:2rem;font-family:sans-serif">Loading… If this persists, hard-refresh. Full app restoring…</p>
-<script>location.replace('/?v='+Date.now());</script>
+
+<nav class="top-nav">
+  <button type="button" class="brand" onclick="goHome()" title="Back to all stock">
+    <img class="brand-logo" src="data:image/png;base64,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" alt="" width="28" height="28">
+    <span class="brand-text">Dealer Stock <span>Burton</span></span>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <button data-cat="Stock" class="active">Stock</button>
+    <button data-cat="Demonstrators">Demonstrators</button>
+    <button data-cat="Pre-reg">Pre-reg</button>
+    <button data-cat="Commercials">Commercials</button>
+    <button data-cat="Arriving Soon">Arriving Soon</button>
+    <button data-cat="Sold">Sold</button>
+    <button data-cat="Delivered">Delivered</button>
+    <button data-cat="All">All</button>
+  </div>
+  <div class="nav-right">
+    <span class="sync-status" id="syncStatus">Loading…</span>
+    <button type="button" class="btn-ghost" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ <span class="hide-xs">Sync </span>stock</button>
+    <button type="button" class="btn-ghost" onclick="location.reload()" title="Reload page">↻ Refresh</button>
+    <button type="button" onclick="openForm()">+ Add vehicle</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1 id="pageTitle">Stock <span class="count" id="countLabel">(0)</span></h1>
+    <div class="search-box">
+      <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…" onkeydown="if(event.key==='Enter'){renderList()}">
+      <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
+      <button type="button" class="btn-clear-search" id="clearSearchBtn" onclick="goHome()" style="display:none">✕ All stock</button>
+    </div>
+  </div>
+  
+  <div class="filters-bar" id="filtersBar">
+    <div class="filter-row">
+      <label>Fuel
+        <select id="filterFuel" onchange="renderList()">
+          <option value="">All fuels</option>
+          <option>Petrol</option>
+          <option>Diesel</option>
+          <option>Hybrid</option>
+          <option>Plug-in Hybrid</option>
+          <option>Electric</option>
+        </select>
+      </label>
+      <label>Min £
+        <input type="number" id="filterMinPrice" placeholder="0" min="0" step="100" onchange="renderList()" oninput="debounceRender()">
+      </label>
+      <label>Max £
+        <input type="number" id="filterMaxPrice" placeholder="Any" min="0" step="100" onchange="renderList()" oninput="debounceRender()">
+      </label>
+      <label>Sort by
+        <select id="sortBy" onchange="renderList()">
+          <option value="default">Brand / model / price</option>
+          <option value="price-asc">Price: low → high</option>
+          <option value="price-desc">Price: high → low</option>
+          <option value="mileage-asc">Mileage: low → high</option>
+          <option value="mileage-desc">Mileage: high → low</option>
+          <option value="year-desc">Year: newest</option>
+          <option value="year-asc">Year: oldest</option>
+        </select>
+      </label>
+      <button type="button" class="btn btn-secondary" onclick="clearFilters()" style="min-height:38px;margin-top:1.1rem">Clear filters</button>
+    </div>
+  </div>
+
+  <div id="listArea"></div>
+</div>
+
+<div class="overlay" id="detailModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="detailTitle">Vehicle</h2>
+      <div class="modal-actions no-print">
+        <button type="button" class="btn btn-secondary" onclick="printStockCard()" title="Print stock card" title="Open Pentagon print stock card">🖨 Stock card</button>
+        <button type="button" class="btn btn-primary btn-lg" onclick="editCurrent()">✏️ Edit vehicle</button>
+        <button type="button" class="btn btn-danger" onclick="deleteCurrent()">Remove</button>
+        <button type="button" class="modal-close" onclick="closeModal()" title="Close" aria-label="Close">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="formModal" style="display:none">
+  <div class="modal" style="max-width:920px">
+    <div class="modal-header">
+      <h2 id="formTitle">Add Vehicle</h2>
+      <button class="modal-close" onclick="closeForm()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="vehicleForm" onsubmit="saveVehicle(event)">
+        <input type="hidden" id="f_id">
+        <div class="form-grid">
+          <div>
+            <div class="form-row">
+              <label>Registration *</label>
+              <input id="f_registration" required style="text-transform:uppercase" placeholder="e.g. AB12 CDE">
+            </div>
+            <div class="form-row two">
+              <div><label>Make *</label><input id="f_make" required></div>
+              <div><label>Model *</label><input id="f_model" required></div>
+            </div>
+            <div class="form-row"><label>Derivative</label><input id="f_derivative"></div>
+            <div class="form-row three">
+              <div><label>Mileage</label><input type="number" id="f_mileage"></div>
+              <div><label>Year</label><input type="number" id="f_model_year" min="1990" max="2030"></div>
+              <div><label>Doors</label><input type="number" id="f_doors"></div>
+            </div>
+            <div class="form-row three">
+              <div><label>Transmission</label>
+                <select id="f_transmission"><option value="">–</option><option>Manual</option><option>Automatic</option><option>Semi-Auto</option></select>
+              </div>
+              <div><label>Fuel</label>
+                <select id="f_fuel"><option value="">–</option><option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Plug-in Hybrid</option><option>Electric</option></select>
+              </div>
+              <div><label>Body</label>
+                <select id="f_body_type"><option value="">–</option><option>Hatchback</option><option>Saloon</option><option>Estate</option><option>SUV</option><option>Coupe</option><option>MPV</option><option>Van</option></select>
+              </div>
+            </div>
+            <div class="form-row"><label>Colour</label><input id="f_colour"></div>
+            <div class="form-row"><label>Image URL</label><input id="f_image_url" placeholder="https://…"></div>
+          </div>
+          <div>
+            <div class="form-row two">
+              <div><label>Retail Price (£)</label><input type="number" step="0.01" id="f_retail_price"></div>
+              <div><label>In stock since</label><input type="date" id="f_bring_into_stock_date"></div>
+            </div>
+            <div class="form-row two">
+              <div><label>Category</label>
+                <select id="f_category">
+                  <option>Stock</option><option>Demonstrators</option><option>Pre-reg</option><option>Commercials</option>
+                  <option>Arriving Soon</option><option>Sold</option><option>Delivered</option>
+                </select>
+              </div>
+              <div><label>Service History</label>
+                <select id="f_service_history">
+                  <option value="">–</option>
+                  <option value="Full Service History">Full Service History (FSH)</option>
+                  <option value="Full Manufacturer">Full Manufacturer</option>
+                  <option value="Part Service">Part Service</option>
+                  <option value="No History">No History</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row"><label>Service notes</label><input id="f_service_history_notes"></div>
+            <div class="form-row"><label>Special offer</label><input id="f_special_offer"></div>
+            <div class="form-row"><label>Sales note</label><textarea id="f_new_note" rows="2"></textarea></div>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Status Flags</legend>
+          <div class="check-grid" id="statusFlags"></div>
+        </fieldset>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg">💾 Save changes</button>
+          <button type="button" class="btn btn-secondary btn-lg" onclick="closeForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const FLAGS = ['Pre-Reg','Awaiting Prep','Bodyshop','Workshop','Lower Price','Special Offer','On Loan','Other','Auction','Deposit Taken'];
+const IMPORTED_STOCK = [];
+let vehicles = JSON.parse(localStorage.getItem('dealerStock') || 'null') || [];
+const IMPORT_VERSION = 'pentagon-burton-live';
+let currentCat = 'Stock';
+let currentId = null;
+
+
+
+function catBadge(v) {
+  const c = v.category || 'Stock';
+  if (c === 'Stock') return '';
+  return `<span class="badge-service badge-none">${c}</span>`;
+}
+
+function serviceBadge(v) {
+  const s = (v.service_history || '').trim();
+  if (!s) return '';
+  let cls = 'badge-none', label = s;
+  const low = s.toLowerCase();
+  if (low.includes('full service') || low === 'fsh') { cls = 'badge-fsh'; label = 'FSH'; }
+  else if (low.includes('manufacturer')) { cls = 'badge-mfr'; label = 'Full manufacturer'; }
+  else if (low.includes('part')) { cls = 'badge-part'; label = 'Part service'; }
+  else if (low.includes('no history')) { cls = 'badge-none'; label = 'No history'; }
+  return `<span class="badge-service ${cls}">${label}</span>`;
+}
+
+let _debounceTimer;
+function debounceRender() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(renderList, 300);
+}
+
+function clearFilters() {
+  document.getElementById('filterFuel').value = '';
+  document.getElementById('filterMinPrice').value = '';
+  document.getElementById('filterMaxPrice').value = '';
+  document.getElementById('sortBy').value = 'default';
+  document.getElementById('searchInput').value = '';
+  renderList();
+}
+
+function setLastSynced(isoOrText) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (!isoOrText) return;
+  let text = isoOrText;
+  if (/^\d{4}-/.test(String(isoOrText)) || isoOrText instanceof Date) {
+    const d = new Date(isoOrText);
+    text = 'Synced ' + d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  }
+  el.textContent = text;
+  el.className = 'sync-status ok';
+}
+
+
+
+
+
+/* ===== Reliable scheduled stock sync ===== */
+const SYNC_KEY = 'dsb_last_sync_ok';
+const SYNC_MIN_GAP_MS = 3 * 60 * 60 * 1000; // don't auto more than every 3h
+const SYNC_BUSINESS_POLL_MS = 30 * 60 * 1000; // while tab open in business hours
+
+function ukHourNow() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: 'numeric', hour12: false }).formatToParts(new Date());
+    return parseInt(parts.find(p => p.type === 'hour').value, 10);
+  } catch (_) {
+    return new Date().getHours();
+  }
+}
+
+function isUkBusinessHours() {
+  const h = ukHourNow();
+  return h >= 8 && h < 19;
+}
+
+function lastSyncOk() {
+  const t = parseInt(localStorage.getItem(SYNC_KEY) || '0', 10);
+  return t || 0;
+}
+
+function markSyncOk() {
+  localStorage.setItem(SYNC_KEY, String(Date.now()));
+}
+
+async function syncStockNow(opts) {
+  opts = opts || {};
+  const silent = !!opts.silent;
+  if (!location.protocol.startsWith('http')) {
+    if (!silent) alert('Sync only works on the live site.');
+    return false;
+  }
+  if (!silent) setSyncStatus('Syncing from Pentagon…', '');
+  try {
+    const res = await fetch('/api/sync-stock?t=' + Date.now(), { method: 'POST', cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    markSyncOk();
+    const msg = (data.inStock || data.live || '?') + ' in stock · ' + (data.sold || 0) + ' sold · ' +
+      new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    setSyncStatus(msg, 'ok');
+    const mob = document.getElementById('syncStatusMobile');
+    if (mob) mob.textContent = msg;
+    if (!silent) {
+      setTimeout(() => location.reload(), 2000);
+    } else if (data.newlySold > 0 || data.returned > 0) {
+      // Stock changed — soft reload vehicles
+      setTimeout(() => location.reload(), 1500);
+    }
+    return true;
+  } catch (e) {
+    const err = 'Sync failed: ' + (e.message || e);
+    setSyncStatus(err, 'err');
+    const mob = document.getElementById('syncStatusMobile');
+    if (mob) mob.textContent = err;
+    return false;
+  }
+}
+
+async function maybeAutoSync() {
+  if (!location.protocol.startsWith('http')) return;
+  if (!isUkBusinessHours()) return;
+  if (Date.now() - lastSyncOk() < SYNC_MIN_GAP_MS) return;
+  await syncStockNow({ silent: true });
+}
+
+function startReliableSync() {
+  // After first load settles
+  setTimeout(maybeAutoSync, 8000);
+  setInterval(maybeAutoSync, SYNC_BUSINESS_POLL_MS);
+}
+
+
+function goHome() {
+  currentCat = 'Stock';
+  document.querySelectorAll('#navLinks button').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-cat') === 'Stock');
+  });
+  const s = document.getElementById('searchInput');
+  if (s) s.value = '';
+  const fuel = document.getElementById('filterFuel');
+  if (fuel) fuel.value = '';
+  const minP = document.getElementById('filterMinPrice');
+  if (minP) minP.value = '';
+  const maxP = document.getElementById('filterMaxPrice');
+  if (maxP) maxP.value = '';
+  const sort = document.getElementById('sortBy');
+  if (sort) sort.value = 'default';
+  closeModal();
+  closeForm();
+  renderList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setSyncStatus(text, cls) {
+  const el = document.getElementById('syncStatus');
+  if (el) {
+    el.textContent = text;
+    el.className = 'sync-status' + (cls ? ' ' + cls : '');
+  }
+  const mob = document.getElementById('syncStatusMobile');
+  if (mob) mob.textContent = text || '';
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* daysInStock removed */
+
+function save() {
+  localStorage.setItem('dealerStock', JSON.stringify(vehicles));
+}
+
+
+function cleanModelDisplay(make, model) {
+  let m = (model || '').trim();
+  const mk = (make || '').trim();
+  if (mk && m.toLowerCase().startsWith(mk.toLowerCase() + ' ')) m = m.slice(mk.length).trim();
+  const parts = m.split(/\s+/);
+  const out = [];
+  parts.forEach(p => { if (!out.length || out[out.length-1].toLowerCase() !== p.toLowerCase()) out.push(p); });
+  return out.join(' ');
+}
+
+function formatSpec(d) {
+  if (!d) return '';
+  let s = String(d).trim();
+  // Data is scraped from the live listing title (already correct: 1.2, 82.5 kWh).
+  // Only tidy casing / acronyms — never invent or move decimal points.
+  const map = [
+    [/\bPuretech\b/gi, 'PureTech'], [/\bTfsi\b/g, 'TFSI'], [/\bTsi\b/g, 'TSI'],
+    [/\bTdi\b/g, 'TDI'], [/\bHdi\b/gi, 'HDi'], [/\bBluehdi\b/gi, 'BlueHDi'],
+    [/\bEcoboost\b/gi, 'EcoBoost'], [/\bCrdi\b/gi, 'CRDi'], [/\bTce\b/gi, 'TCe'],
+    [/\bMhev\b/gi, 'MHEV'], [/\bDm I\b/gi, 'DM-i'], [/\bEat6\b/gi, 'EAT6'],
+    [/\bEat8\b/gi, 'EAT8'], [/\bCvt\b/g, 'CVT'], [/\bAwd\b/g, 'AWD'],
+    [/\bkwh\b/gi, 'kWh'], [/(\d)\s*kWh/gi, '$1 kWh'], [/\bPs\b/g, 'PS'], [/\bBhp\b/g, 'BHP'],
+  ];
+  map.forEach(([pat, rep]) => { s = s.replace(pat, rep); });
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+
+function fmtPrice(p) {
+  if (p == null || p === '') return '—';
+  return '£' + Number(p).toLocaleString('en-GB', { maximumFractionDigits: 0 });
+}
+
+function naturalModelKey(model) {
+  const m = model || '';
+  const nums = m.match(/\d+/);
+  if (nums) return [0, parseInt(nums[0], 10), m.toLowerCase()];
+  return [1, 0, m.toLowerCase()];
+}
+
+function groupVehicles(list) {
+  const byMake = {};
+  list.forEach(v => {
+    const make = (v.make || 'Unknown').toUpperCase();
+    if (!byMake[make]) byMake[make] = {};
+    const model = (v.model || 'Unknown').toUpperCase();
+    if (!byMake[make][model]) byMake[make][model] = [];
+    byMake[make][model].push(v);
+  });
+  Object.keys(byMake).forEach(make => {
+    Object.keys(byMake[make]).forEach(model => {
+      byMake[make][model].sort((a, b) => (a.retail_price || 1e12) - (b.retail_price || 1e12));
+    });
+  });
+  return byMake;
+}
+
+function cardHtml(v) {
+  const flags = (v.status_flags || []).map(f => `<span class="flag">${f}</span>`).join('');
+  const img = v.image_url
+    ? `<img class="card-img" src="${v.image_url}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-img-placeholder',textContent:'No photo'}))">`
+    : `<div class="card-img-placeholder">No photo</div>`;
+  return `<div class="vehicle-card" onclick="openDetail('${v.id}')">
+    ${img}
+    <div class="card-body">
+      <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span><span class="price">${fmtPrice(v.retail_price)}</span></div>
+      <div class="spec">${formatSpec(v.derivative || '')}</div>
+      <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
+      <div class="reg">${v.registration || ''}</div>
+      <div class="colour">${v.colour || ''}</div>
+      ${catBadge(v)}${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const fuel = (document.getElementById('filterFuel') || {}).value || '';
+  const minP = parseFloat((document.getElementById('filterMinPrice') || {}).value);
+  const maxP = parseFloat((document.getElementById('filterMaxPrice') || {}).value);
+  const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
+  const ON_SITE = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'];
+  let list = vehicles.filter(v => {
+    if (currentCat === 'All') return true;
+    if (currentCat === 'Stock') return ON_SITE.includes(v.category || 'Stock');
+    return v.category === currentCat;
+  });
+  if (q) {
+    list = list.filter(v =>
+      (v.registration||'').toLowerCase().includes(q) ||
+      (v.make||'').toLowerCase().includes(q) ||
+      (v.model||'').toLowerCase().includes(q) ||
+      (v.derivative||'').toLowerCase().includes(q) ||
+      (v.colour||'').toLowerCase().includes(q)
+    );
+  }
+  if (fuel) {
+    list = list.filter(v => (v.fuel || '').toLowerCase().includes(fuel.toLowerCase()));
+  }
+  if (!isNaN(minP)) list = list.filter(v => v.retail_price != null && v.retail_price >= minP);
+  if (!isNaN(maxP)) list = list.filter(v => v.retail_price != null && v.retail_price <= maxP);
+  if (sortBy === 'price-asc') list = list.slice().sort((a,b) => (a.retail_price||1e12) - (b.retail_price||1e12));
+  else if (sortBy === 'price-desc') list = list.slice().sort((a,b) => (b.retail_price||0) - (a.retail_price||0));
+  else if (sortBy === 'mileage-asc') list = list.slice().sort((a,b) => (a.mileage||1e12) - (b.mileage||1e12));
+  else if (sortBy === 'mileage-desc') list = list.slice().sort((a,b) => (b.mileage||0) - (a.mileage||0));
+  else if (sortBy === 'year-desc') list = list.slice().sort((a,b) => (b.model_year||0) - (a.model_year||0));
+  else if (sortBy === 'year-asc') list = list.slice().sort((a,b) => (a.model_year||0) - (b.model_year||0));
+
+  document.getElementById('countLabel').textContent = '(' + list.length + ')';
+  const hasFilter = !!(document.getElementById('searchInput').value || '').trim()
+    || !!(document.getElementById('filterFuel') || {}).value
+    || !!(document.getElementById('filterMinPrice') || {}).value
+    || !!(document.getElementById('filterMaxPrice') || {}).value
+    || ((document.getElementById('sortBy') || {}).value || 'default') !== 'default'
+    || currentCat !== 'Stock';
+  const clr = document.getElementById('clearSearchBtn');
+  if (clr) clr.style.display = hasFilter ? 'inline-flex' : 'none';
+
+  document.getElementById('pageTitle').childNodes[0].textContent = currentCat + ' ';
+  const area = document.getElementById('listArea');
+  if (!list.length) {
+    area.innerHTML = '<div class="empty">No vehicles found.</div>';
+    return;
+  }
+  if (sortBy !== 'default') {
+    area.innerHTML = `<div class="vehicle-grid">${list.map(cardHtml).join('')}</div>`;
+    return;
+  }
+  const grouped = groupVehicles(list);
+  const makes = Object.keys(grouped).sort();
+  let html = '';
+  makes.forEach(make => {
+    html += `<section class="make-section"><h2 class="make-title">${make}</h2>`;
+    const models = Object.keys(grouped[make]).sort((a, b) => {
+      const ka = naturalModelKey(a), kb = naturalModelKey(b);
+      return ka[0]-kb[0] || ka[1]-kb[1] || ka[2].localeCompare(kb[2]);
+    });
+    models.forEach(model => {
+      const cars = grouped[make][model];
+      html += `<h3 class="model-title">${model} <span class="model-count">(${cars.length})</span></h3>`;
+      html += `<div class="vehicle-grid">${cars.map(cardHtml).join('')}</div>`;
+    });
+    html += `</section>`;
+  });
+  area.innerHTML = html;
+}
+
+function openDetail(id) {
+  const v = vehicles.find(x => x.id === id);
+  if (!v) return;
+  currentId = id;
+  document.getElementById('detailTitle').textContent = `${(v.make||'').toUpperCase()} ${(v.model||'').toUpperCase()} · ${v.registration||''}`;
+  const photo = v.image_url
+    ? `<div class="photo-box"><img src="${v.image_url}" alt=""></div>`
+    : `<div class="photo-box"><div class="no-photo">No photo</div></div>`;
+  const notes = (v.notes || []).map(n =>
+    `<div class="note-item"><div class="note-date">${n.date || ''}</div><div class="note-text">${(n.text||'').replace(/</g,'&lt;')}</div></div>`
+  ).join('') || '<p style="color:var(--muted);font-size:0.85rem">No notes yet.</p>';
+  const link = v.detail_url ? `<p style="margin-top:0.5rem"><a href="${v.detail_url}" target="_blank" rel="noopener" style="color:var(--primary)">View on Pentagon site ↗</a></p>` : '';
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-grid">
+      <div>
+        ${photo}
+        <div class="price-lg">${fmtPrice(v.retail_price)}</div>
+        ${v.special_offer ? `<div style="color:var(--accent);font-weight:600;margin-bottom:0.5rem">${v.special_offer}</div>` : ''}
+        <div class="info-box">
+          <h3>Details</h3>
+          <dl>
+            <dt>Registration</dt><dd>${v.registration||'—'}</dd>
+            <dt>Colour</dt><dd>${v.colour||'—'}</dd>
+            <dt>Year</dt><dd>${v.model_year||'—'}</dd>
+            <dt>Mileage</dt><dd>${v.mileage != null ? v.mileage.toLocaleString() : '—'}</dd>
+            <dt>Fuel</dt><dd>${v.fuel||'—'}</dd>
+            <dt>Transmission</dt><dd>${v.transmission||'—'}</dd>
+            <dt>Body</dt><dd>${v.body_type||'—'}</dd>
+            <dt>Doors</dt><dd>${v.doors||'—'}</dd>
+            <dt>Service</dt><dd>${v.service_history||'—'}</dd>
+            
+          </dl>
+        </div>
+        ${link}
+        <div class="notes-area">
+          <h3>Sales notes</h3>
+          <div class="note-form no-print">
+            <textarea id="newNoteText" placeholder="Add a note…"></textarea>
+            <button class="btn btn-primary" type="button" onclick="addNote()">Add note</button>
+          </div>
+          <div id="notesList">${notes}</div>
+        </div>
+      </div>
+      <div>
+        <div class="info-box">
+          <h3>Spec</h3>
+          <p style="font-size:0.85rem">${formatSpec(v.derivative)||'—'}</p>
+        </div>
+        <div class="info-box">
+          <h3>Flags</h3>
+          <p style="font-size:0.85rem">${(v.status_flags||[]).join(', ') || '—'}</p>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('detailModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('detailModal').style.display = 'none'; currentId = null; }
+
+async function addNote() {
+  const v = vehicles.find(x => x.id === currentId);
+  if (!v) return;
+  const text = (document.getElementById('newNoteText').value || '').trim();
+  if (!text) return;
+  if (!v.notes) v.notes = [];
+  v.notes.unshift({ date: new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' }), text });
+  save();
+  openDetail(currentId);
+  const r = await sharedSave({ registration: v.registration, add_note: text });
+  if (!r.ok) alert('Note saved on this device only — shared save needs setup: ' + (r.error || ''));
+  else setSyncStatus('Note shared with team', 'ok');
+}
+
+function deleteCurrent() {
+  if (!currentId || !confirm('Remove this vehicle from your list?')) return;
+  vehicles = vehicles.filter(v => v.id !== currentId);
+  save();
+  closeModal();
+  renderList();
+}
+
+function printStockCard() {
+  const v = vehicles.find(x => x.id === currentId);
+  if (!v) return;
+  // Prefer official Pentagon "print vehicle" page (accurate stock card)
+  let printUrl = '';
+  if (v.detail_url) {
+    printUrl = v.detail_url.replace(/\/?$/, '') + '/print';
+  }
+  if (printUrl) {
+    window.open(printUrl, '_blank', 'noopener');
+    return;
+  }
+  // Fallback: print only this vehicle's detail card
+  const body = document.getElementById('detailBody');
+  if (!body) { window.print(); return; }
+  const w = window.open('', '_blank');
+  if (!w) { window.print(); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Stock Card ${v.registration || ''}</title>
+    <style>
+      body{font-family:system-ui,sans-serif;padding:1.5rem;color:#111;max-width:800px;margin:0 auto}
+      h1{font-size:1.3rem;margin:0 0 0.5rem}
+      .price{font-size:1.6rem;font-weight:700;color:#1a56a8;margin:0.5rem 0}
+      img{max-width:100%;border-radius:8px}
+      dl{display:grid;grid-template-columns:1fr 1fr;gap:0.35rem 1rem;font-size:0.9rem}
+      dt{color:#666} dd{font-weight:600;margin:0}
+    </style></head><body>`);
+  w.document.write(`<h1>${(v.make||'')} ${(v.model||'')} · ${v.registration||''}</h1>`);
+  if (v.image_url) w.document.write(`<img src="${v.image_url}" alt="">`);
+  w.document.write(`<div class="price">${fmtPrice(v.retail_price)}</div>`);
+  w.document.write(`<p>${formatSpec(v.derivative||'')}</p>`);
+  w.document.write(`<dl>
+    <dt>Colour</dt><dd>${v.colour||'—'}</dd>
+    <dt>Year</dt><dd>${v.model_year||'—'}</dd>
+    <dt>Mileage</dt><dd>${v.mileage!=null?v.mileage.toLocaleString()+' mi':'—'}</dd>
+    <dt>Fuel</dt><dd>${v.fuel||'—'}</dd>
+    <dt>Transmission</dt><dd>${v.transmission||'—'}</dd>
+    <dt>Service</dt><dd>${v.service_history||'—'}</dd>
+  </dl>`);
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(() => { w.print(); }, 400);
+}
+
+
+function editCurrent() {
+  const v = vehicles.find(x => x.id === currentId);
+  if (!v) return;
+  closeModal();
+  openForm(v);
+}
+
+function openForm(v) {
+  document.getElementById('formTitle').textContent = v ? 'Edit Vehicle' : 'Add Vehicle';
+  document.getElementById('f_id').value = v ? v.id : '';
+  const fields = ['registration','make','model','derivative','mileage','model_year','doors','transmission','fuel','body_type','colour','image_url','retail_price','bring_into_stock_date','category','service_history','service_history_notes','special_offer'];
+  fields.forEach(f => {
+    const el = document.getElementById('f_' + f);
+    if (!el) return;
+    el.value = v && v[f] != null ? v[f] : (f === 'category' ? 'Stock' : '');
+  });
+  document.getElementById('f_new_note').value = '';
+  const sf = document.getElementById('statusFlags');
+  sf.innerHTML = FLAGS.map(f => {
+    const checked = v && (v.status_flags||[]).includes(f) ? 'checked' : '';
+    return `<label><input type="checkbox" value="${f}" ${checked}> ${f}</label>`;
+  }).join('');
+  document.getElementById('formModal').style.display = 'flex';
+}
+
+function closeForm() { document.getElementById('formModal').style.display = 'none'; }
+
+function saveVehicle(e) {
+  e.preventDefault();
+  const id = document.getElementById('f_id').value || uid();
+  const existing = vehicles.find(v => v.id === id);
+  const flags = [...document.querySelectorAll('#statusFlags input:checked')].map(c => c.value);
+  const data = {
+    id,
+    registration: document.getElementById('f_registration').value.trim().toUpperCase(),
+    make: document.getElementById('f_make').value.trim(),
+    model: document.getElementById('f_model').value.trim(),
+    derivative: document.getElementById('f_derivative').value.trim(),
+    mileage: Number(document.getElementById('f_mileage').value) || null,
+    model_year: Number(document.getElementById('f_model_year').value) || null,
+    doors: Number(document.getElementById('f_doors').value) || null,
+    transmission: document.getElementById('f_transmission').value,
+    fuel: document.getElementById('f_fuel').value,
+    body_type: document.getElementById('f_body_type').value,
+    colour: document.getElementById('f_colour').value.trim(),
+    image_url: document.getElementById('f_image_url').value.trim(),
+    retail_price: Number(document.getElementById('f_retail_price').value) || null,
+    bring_into_stock_date: document.getElementById('f_bring_into_stock_date').value || new Date().toISOString().slice(0,10),
+    category: document.getElementById('f_category').value,
+    service_history: document.getElementById('f_service_history').value,
+    service_history_notes: document.getElementById('f_service_history_notes').value.trim(),
+    special_offer: document.getElementById('f_special_offer').value.trim(),
+    status_flags: flags,
+    notes: existing ? (existing.notes || []) : [],
+    source: existing ? existing.source : 'manual',
+  };
+  const note = document.getElementById('f_new_note').value.trim();
+  if (note) data.notes.unshift({ date: new Date().toLocaleString('en-GB'), text: note });
+  if (existing) {
+    Object.assign(existing, data);
+  } else {
+    vehicles.push(data);
+  }
+  save();
+  closeForm();
+  renderList();
+  sharedSave({
+    registration: data.registration,
+    service_history: data.service_history,
+    service_history_notes: data.service_history_notes,
+    status_flags: data.status_flags,
+    special_offer: data.special_offer,
+    category: data.category,
+    notes: data.notes,
+  }).then(r => {
+    if (r.ok) setSyncStatus('Changes shared with team', 'ok');
+    else console.warn('Shared save', r.error);
+  });
+}
+
+document.getElementById('navLinks').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#navLinks button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentCat = e.target.dataset.cat;
+  renderList();
+});
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') renderList(); });
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeForm(); } });
+});
+
+
+async function sharedSave(payload) {
+  try {
+    const res = await fetch('/api/save-override', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.warn('Shared save failed', data);
+      return { ok: false, error: data.error || res.statusText };
+    }
+    return { ok: true, data };
+  } catch (e) {
+    console.warn(e);
+    return { ok: false, error: String(e) };
+  }
+}
+
+async function loadFromVehiclesJson() {
+  if (!location.protocol.startsWith('http')) return false;
+  try {
+    setSyncStatus('Loading…', '');
+    const res = await fetch('./vehicles.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const list = await res.json();
+    if (!Array.isArray(list) || !list.length) throw new Error('Empty');
+    // Keep manual team data across stock refresh (notes / service history are NOT on the website)
+    const prevByReg = {};
+    (vehicles || []).forEach(v => {
+      if (v && v.registration) prevByReg[v.registration] = v;
+    });
+    let imgMap = {};
+    try {
+      const ir = await fetch('./images_map.json?t=' + Date.now(), { cache: 'no-store' });
+      if (ir.ok) imgMap = await ir.json();
+    } catch (_) {}
+    let overrides = {};
+    try {
+      let or = await fetch('/api/save-override?t=' + Date.now(), { cache: 'no-store' }).catch(() => null);
+      if (or && or.ok) overrides = await or.json();
+      else {
+        or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+        if (or.ok) overrides = await or.json();
+      }
+    } catch (_) {}
+    vehicles = list.map(v => {
+      const prev = prevByReg[v.registration] || {};
+      const o = overrides[v.registration] || overrides[v.id] || {};
+      // Priority: shared overrides → previous session → scraped stock (usually empty for these fields)
+      v.notes = (o.notes != null ? o.notes : null) ?? (prev.notes || []) ;
+      v.service_history = (o.service_history != null ? o.service_history : null) ?? (prev.service_history || '');
+      v.service_history_notes = (o.service_history_notes != null ? o.service_history_notes : null) ?? (prev.service_history_notes || '');
+      v.status_flags = (o.status_flags != null ? o.status_flags : null) ?? (prev.status_flags || []);
+      v.special_offer = (o.special_offer != null ? o.special_offer : null) ?? (prev.special_offer || v.special_offer || '');
+      // Category: Sold/Delivered etc from overrides or previous, else scraped
+      if (o.category) v.category = o.category;
+      else if (prev.category && prev.category !== 'Stock' && v.category === 'Stock') {
+        // keep manual categories only if scrape still says Stock and we had something else
+        // (Sold is set by server sync when car leaves website)
+      }
+      if (prev.bring_into_stock_date && !v.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;
+      if (!v.image_url && imgMap[v.registration]) v.image_url = imgMap[v.registration];
+      return v;
+    });
+    localStorage.setItem('dealerStock', JSON.stringify(vehicles));
+    localStorage.setItem('dealerStockVersion', IMPORT_VERSION);
+    setSyncStatus(vehicles.length + ' cars · synced ' + new Date().toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'}), 'ok');
+    return true;
+  } catch (e) {
+    console.warn(e);
+    return false;
+  }
+}
+
+
+// Live team sync: pull shared notes/edits often; full stock less often
+const AUTO_OVERRIDES_MS = 20000;
+const AUTO_STOCK_MS = 180000;
+let autoRefreshTimer = null;
+
+function applyOverridesToVehicles(overrides) {
+  if (!overrides || typeof overrides !== 'object') return false;
+  let changed = false;
+  vehicles.forEach(v => {
+    const o = overrides[v.registration] || overrides[v.id];
+    if (!o) return;
+    if (o.notes != null && JSON.stringify(o.notes) !== JSON.stringify(v.notes || [])) {
+      v.notes = o.notes; changed = true;
+    }
+    if (o.service_history != null && o.service_history !== v.service_history) {
+      v.service_history = o.service_history; changed = true;
+    }
+    if (o.service_history_notes != null && o.service_history_notes !== v.service_history_notes) {
+      v.service_history_notes = o.service_history_notes; changed = true;
+    }
+    if (o.status_flags != null && JSON.stringify(o.status_flags) !== JSON.stringify(v.status_flags || [])) {
+      v.status_flags = o.status_flags; changed = true;
+    }
+    if (o.special_offer != null && o.special_offer !== v.special_offer) {
+      v.special_offer = o.special_offer; changed = true;
+    }
+    if (o.category && o.category !== v.category) {
+      v.category = o.category; changed = true;
+    }
+  });
+  if (changed) {
+    save();
+    if (currentId) {
+      const still = vehicles.find(x => x.id === currentId);
+      if (still) openDetail(currentId);
+    }
+    renderList();
+  }
+  return changed;
+}
+
+async function pollOverrides() {
+  if (!location.protocol.startsWith('http')) return;
+  try {
+    // Prefer API (reads GitHub live — no Vercel CDN wait)
+    let overrides = null;
+    try {
+      const res = await fetch('/api/save-override?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) overrides = await res.json();
+    } catch (_) {}
+    if (!overrides) {
+      const res = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return;
+      overrides = await res.json();
+    }
+    applyOverridesToVehicles(overrides);
+  } catch (_) {}
+}
+
+async function pollStockQuiet() {
+  if (!location.protocol.startsWith('http')) return;
+  try {
+    const res = await fetch('./vehicles.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const list = await res.json();
+    if (!Array.isArray(list) || !list.length) return;
+    // Preserve manual fields from current state / will re-merge overrides after
+    const prevByReg = {};
+    vehicles.forEach(v => { if (v.registration) prevByReg[v.registration] = v; });
+    let overrides = {};
+    try {
+      let or = await fetch('/api/save-override?t=' + Date.now(), { cache: 'no-store' }).catch(() => null);
+      if (or && or.ok) overrides = await or.json();
+      else {
+        or = await fetch('./overrides.json?t=' + Date.now(), { cache: 'no-store' });
+        if (or.ok) overrides = await or.json();
+      }
+    } catch (_) {}
+    const oldRegs = new Set(vehicles.map(v => v.registration));
+    const newRegs = new Set(list.map(v => v.registration));
+    const changed = oldRegs.size !== newRegs.size || [...newRegs].some(r => !oldRegs.has(r));
+    vehicles = list.map(v => {
+      const prev = prevByReg[v.registration] || {};
+      const o = overrides[v.registration] || overrides[v.id] || {};
+      v.notes = (o.notes != null ? o.notes : null) ?? (prev.notes || []);
+      v.service_history = (o.service_history != null ? o.service_history : null) ?? (prev.service_history || '');
+      v.service_history_notes = (o.service_history_notes != null ? o.service_history_notes : null) ?? (prev.service_history_notes || '');
+      v.status_flags = (o.status_flags != null ? o.status_flags : null) ?? (prev.status_flags || []);
+      v.special_offer = (o.special_offer != null ? o.special_offer : null) ?? (prev.special_offer || v.special_offer || '');
+      if (o.category) v.category = o.category;
+      else if (prev.category && prev.category !== 'Stock') v.category = prev.category;
+      if (prev.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;
+      return v;
+    });
+    save();
+    if (changed) {
+      setSyncStatus(vehicles.length + ' cars · auto-updated ' + new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}), 'ok');
+      renderList();
+    }
+  } catch (_) {}
+}
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) return;
+  setInterval(pollOverrides, AUTO_OVERRIDES_MS);
+  setInterval(pollStockQuiet, AUTO_STOCK_MS);
+  // first overrides poll after short delay
+  setTimeout(pollOverrides, 8000);
+}
+
+(async function init() {
+  if (await loadFromVehiclesJson()) { startAutoRefresh(); startReliableSync(); renderList(); return; }
+  if (!vehicles.length) vehicles = IMPORTED_STOCK;
+  setSyncStatus(vehicles.length ? vehicles.length + ' cars · local' : 'No data', '');
+  startAutoRefresh();
+  startReliableSync();
+  renderList();
+})();
+
+</script>
 </body>
 </html>

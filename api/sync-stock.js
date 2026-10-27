@@ -1,5 +1,5 @@
 /**
- * POST/GET /api/sync-stock — Scrape Pentagon Burton; missing cars → Sold; push vehicles.json
+ * POST/GET /api/sync-stock — Scrape Pentagon Burton; prices from data-price; Sold when gone
  * Requires GITHUB_TOKEN with repo contents:write
  */
 const OWNER = '100492107';
@@ -88,10 +88,23 @@ function parseBlocks(html, defaultCategory) {
     const imgM = body.match(/src="(https:\/\/pentagon-v4\.imgix\.net\/used-vehicle-photos\/1\/[^"]+)"/) || body.match(/src="(https:\/\/pentagon-v4\.imgix\.net\/used-vehicle-photos\/\d+\/[^"]+)"/);
     if (imgM) { image_url = imgM[1].split('&dpr=')[0]; if (image_url.includes('w=560')) image_url = image_url.replace('w=560','w=400').replace('h=421','h=300'); }
     const text = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    const priceM = text.match(/(?:Our Price|Price)\s*£\s*([0-9,]+)/i);
-    const price = priceM ? parseFloat(priceM[1].replace(/,/g, '')) : null;
-    const milesM = text.match(/([\d,]+)\s*miles/i);
-    const miles = milesM ? parseInt(milesM[1].replace(/,/g, ''), 10) : null;
+    let price = null;
+    const priceAttr = attrs.match(/data-price="([^"]*)"/);
+    if (priceAttr && priceAttr[1].trim()) {
+      const n = parseFloat(priceAttr[1].replace(/,/g, '').replace(/£/g, '').trim());
+      if (!isNaN(n)) price = n;
+    }
+    if (price == null) {
+      const priceM = text.match(/(?:Our Price|Price)\s*£\s*([0-9,]+)/i) || body.match(/<b>£([0-9,]+)<\/b>/);
+      if (priceM) price = parseFloat(priceM[1].replace(/,/g, ''));
+    }
+    let miles = null;
+    const milesAttr = attrs.match(/data-mileage="([^"]*)"/);
+    if (milesAttr && /^\d+$/.test(milesAttr[1].replace(/,/g, ''))) miles = parseInt(milesAttr[1].replace(/,/g, ''), 10);
+    if (miles == null) {
+      const milesM = text.match(/([\d,]+)\s*miles/i);
+      if (milesM) miles = parseInt(milesM[1].replace(/,/g, ''), 10);
+    }
     const yearM = text.match(/\|\s*(20\d{2})\b/) || text.match(/\b(20\d{2})\b/);
     const year = yearM ? parseInt(yearM[1], 10) : null;
     let fuel = '';

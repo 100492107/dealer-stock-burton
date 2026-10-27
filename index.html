@@ -304,6 +304,35 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   body { background: #fff; }
 }
 
+
+.filter-toggle {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  font-size: 0.72rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.btn-toggle-images {
+  padding: 0.45rem 0.85rem; border: 1px solid var(--border); border-radius: 7px;
+  font-size: 0.88rem; font-weight: 600; font-family: inherit;
+  background: #fff; color: var(--text); cursor: pointer;
+  min-width: 72px; min-height: 38px;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.btn-toggle-images:hover {
+  border-color: var(--primary); color: var(--primary); background: var(--primary-dim);
+}
+.btn-toggle-images:not(.off) {
+  background: var(--primary); color: #fff; border-color: var(--primary);
+}
+.btn-toggle-images:not(.off):hover {
+  background: var(--primary-h); border-color: var(--primary-h); color: #fff;
+}
+.btn-toggle-images.off {
+  background: #fff; color: var(--muted); border-color: var(--border);
+}
+.vehicle-card.no-img .card-body { padding-top: 0.85rem; }
+body.hide-images .vehicle-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
 </style>
 
 </head>
@@ -344,7 +373,9 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   
   <div class="filters-bar" id="filtersBar">
     <div class="filter-row">
-      <button type="button" class="btn-toggle-images" id="toggleImagesBtn" onclick="toggleImages()" title="Show or hide vehicle photos">📷 Images: On</button>
+      <label class="filter-toggle">Photos
+        <button type="button" class="btn-toggle-images" id="toggleImagesBtn" onclick="toggleImages()" title="Show or hide vehicle photos" aria-pressed="true">On</button>
+      </label>
       <label>Fuel
         <select id="filterFuel" onchange="renderList()">
           <option value="">All fuels</option>
@@ -713,8 +744,9 @@ let showImages = localStorage.getItem('dsb_show_images') !== '0';
 function updateImagesToggleBtn() {
   const btn = document.getElementById('toggleImagesBtn');
   if (!btn) return;
-  btn.textContent = showImages ? '📷 Images: On' : '📷 Images: Off';
+  btn.textContent = showImages ? 'On' : 'Off';
   btn.classList.toggle('off', !showImages);
+  btn.setAttribute('aria-pressed', showImages ? 'true' : 'false');
   document.body.classList.toggle('hide-images', !showImages);
 }
 

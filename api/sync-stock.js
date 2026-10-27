@@ -1,6 +1,6 @@
 /**
  * POST/GET /api/sync-stock — Pentagon Burton stock + live prices; Sold when gone
- * Requires GITHUB_TOKEN with repo contents:write
+ * Restores sold archive; Requires GITHUB_TOKEN
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -208,6 +208,26 @@ module.exports = async function handler(req, res) {
       if (v.category === 'Sold' || v.category === 'Delivered') { v.category = 'Stock'; delete v.sold_date; }
       result.push(v);
     }
+    // Restore archived sold cars not already in result
+    try {
+      const { data: archivedSold } = await readJsonFile('sold_cars.json');
+      if (Array.isArray(archivedSold)) {
+        const have = new Set(result.map(v => v.registration));
+        for (const v of archivedSold) {
+          if (!v || !v.registration) continue;
+          if (have.has(v.registration)) continue;
+          if (liveRegs.has(v.registration)) continue;
+          v.category = 'Sold';
+          result.push(v);
+          have.add(v.registration);
+        }
+      }
+    } catch (e) {}
+    try {
+      const soldRows = result.filter(v => v.category === 'Sold' || v.category === 'Delivered');
+      const { sha: soldSha } = await readJsonFile('sold_cars.json');
+      await writeJsonFile('sold_cars.json', soldRows, soldSha, 'Update sold archive');
+    } catch (e) {}
     result.sort((a, b) => {
       const aOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(a.category) ? 0 : 1;
       const bOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(b.category) ? 0 : 1;

@@ -344,6 +344,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   
   <div class="filters-bar" id="filtersBar">
     <div class="filter-row">
+      <button type="button" class="btn-toggle-images" id="toggleImagesBtn" onclick="toggleImages()" title="Show or hide vehicle photos">📷 Images: On</button>
       <label>Fuel
         <select id="filterFuel" onchange="renderList()">
           <option value="">All fuels</option>
@@ -706,12 +707,33 @@ function groupVehicles(list) {
   return byMake;
 }
 
+
+let showImages = localStorage.getItem('dsb_show_images') !== '0';
+
+function updateImagesToggleBtn() {
+  const btn = document.getElementById('toggleImagesBtn');
+  if (!btn) return;
+  btn.textContent = showImages ? '📷 Images: On' : '📷 Images: Off';
+  btn.classList.toggle('off', !showImages);
+  document.body.classList.toggle('hide-images', !showImages);
+}
+
+function toggleImages() {
+  showImages = !showImages;
+  localStorage.setItem('dsb_show_images', showImages ? '1' : '0');
+  updateImagesToggleBtn();
+  renderList();
+}
+
 function cardHtml(v) {
   const flags = (v.status_flags || []).map(f => `<span class="flag">${f}</span>`).join('');
-  const img = v.image_url
-    ? `<img class="card-img" src="${v.image_url}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-img-placeholder',textContent:'No photo'}))">`
-    : `<div class="card-img-placeholder">No photo</div>`;
-  return `<div class="vehicle-card" onclick="openDetail('${v.id}')">
+  let img = '';
+  if (showImages) {
+    img = v.image_url
+      ? `<img class="card-img" src="${v.image_url}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-img-placeholder',textContent:'No photo'}))">`
+      : `<div class="card-img-placeholder">No photo</div>`;
+  }
+  return `<div class="vehicle-card${showImages ? '' : ' no-img'}" onclick="openDetail('${v.id}')">
     ${img}
     <div class="card-body">
       <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span><span class="price">${fmtPrice(v.retail_price)}</span></div>
@@ -1204,6 +1226,7 @@ function startAutoRefresh() {
   if (await loadFromVehiclesJson()) { startAutoRefresh(); startReliableSync(); renderList(); return; }
   if (!vehicles.length) vehicles = IMPORTED_STOCK;
   setSyncStatus(vehicles.length ? vehicles.length + ' cars · local' : 'No data', '');
+  updateImagesToggleBtn();
   startAutoRefresh();
   startReliableSync();
   renderList();

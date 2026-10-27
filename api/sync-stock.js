@@ -1,5 +1,5 @@
 /**
- * POST/GET /api/sync-stock — Scrape Pentagon Burton; prices from data-price; Sold when gone
+ * POST/GET /api/sync-stock — Pentagon Burton stock + live prices; Sold when gone
  * Requires GITHUB_TOKEN with repo contents:write
  */
 const OWNER = '100492107';
@@ -89,18 +89,25 @@ function parseBlocks(html, defaultCategory) {
     if (imgM) { image_url = imgM[1].split('&dpr=')[0]; if (image_url.includes('w=560')) image_url = image_url.replace('w=560','w=400').replace('h=421','h=300'); }
     const text = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     let price = null;
-    const priceAttr = attrs.match(/data-price="([^"]*)"/);
-    if (priceAttr && priceAttr[1].trim()) {
-      const n = parseFloat(priceAttr[1].replace(/,/g, '').replace(/£/g, '').trim());
-      if (!isNaN(n)) price = n;
+    let priceAttr = body.match(/data-price=["']([0-9,.]+)["']/i);
+    if (!priceAttr) priceAttr = attrs.match(/data-price=["']([0-9,.]+)["']/i);
+    if (priceAttr) {
+      const n = parseFloat(String(priceAttr[1]).replace(/,/g, ''));
+      if (!isNaN(n) && n > 0) price = n;
     }
     if (price == null) {
-      const priceM = text.match(/(?:Our Price|Price)\s*£\s*([0-9,]+)/i) || body.match(/<b>£([0-9,]+)<\/b>/);
-      if (priceM) price = parseFloat(priceM[1].replace(/,/g, ''));
+      let priceM = body.match(/data-price=["']([0-9,.]+)["']/i);
+      if (!priceM) priceM = body.match(/Our Price<\/small>\s*<b[^>]*>[^0-9]*([0-9,]{3,})/i);
+      if (!priceM) priceM = body.match(/<b[^>]*>[^0-9]*([0-9,]{4,})[^0-9]*<\/b>/i);
+      if (priceM) {
+        const n = parseFloat(String(priceM[1]).replace(/,/g, ''));
+        if (!isNaN(n) && n > 0) price = n;
+      }
     }
     let miles = null;
-    const milesAttr = attrs.match(/data-mileage="([^"]*)"/);
-    if (milesAttr && /^\d+$/.test(milesAttr[1].replace(/,/g, ''))) miles = parseInt(milesAttr[1].replace(/,/g, ''), 10);
+    let milesAttr = body.match(/data-mileage=["']([0-9,]+)["']/i);
+    if (!milesAttr) milesAttr = attrs.match(/data-mileage=["']([0-9,]+)["']/i);
+    if (milesAttr && /^[0-9,]+$/.test(milesAttr[1])) miles = parseInt(milesAttr[1].replace(/,/g, ''), 10);
     if (miles == null) {
       const milesM = text.match(/([\d,]+)\s*miles/i);
       if (milesM) miles = parseInt(milesM[1].replace(/,/g, ''), 10);
@@ -221,7 +228,8 @@ module.exports = async function handler(req, res) {
     await writeJsonFile('images_map.json', imgs, imgSha, 'Update images_map after stock sync');
     const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(v.category)).length;
     const soldN = result.filter(v => v.category === 'Sold').length;
-    return res.status(200).json({ ok: true, live: live.length, inStock: stockN, sold: soldN, newlySold: soldCount, returned: returnedCount, total: result.length, at: new Date().toISOString() });
+    const priced = result.filter(v => v.retail_price).length;
+    return res.status(200).json({ ok: true, live: live.length, inStock: stockN, sold: soldN, newlySold: soldCount, returned: returnedCount, priced, total: result.length, at: new Date().toISOString() });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
   }

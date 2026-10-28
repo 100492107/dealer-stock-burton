@@ -1,5 +1,5 @@
 /**
- * Shared team edits — notes, service history, flags.
+ * Shared team edits — notes, service history, flags, PEG number.
  * Requires env GITHUB_TOKEN with repo contents:write on 100492107/dealer-stock-burton
  */
 const OWNER = '100492107';
@@ -67,6 +67,7 @@ module.exports = async function handler(req, res) {
   if (body.status_flags !== undefined) next.status_flags = body.status_flags;
   if (body.special_offer !== undefined) next.special_offer = body.special_offer;
   if (body.category !== undefined) next.category = body.category;
+  if (body.peg_number !== undefined) next.peg_number = body.peg_number;
   if (body.notes !== undefined) next.notes = body.notes;
   if (body.add_note) {
     const notes = Array.isArray(next.notes) ? next.notes.slice() : [];

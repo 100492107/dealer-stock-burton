@@ -341,7 +341,10 @@ function applyManual(vehicle, prev, overrides, isLive) {
     const manual = o.category || (['Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(prev.category) ? prev.category : null);
     if (manual && manual !== 'Sold' && manual !== 'Delivered') vehicle.category = manual;
     else if (vehicle.category === 'Sold' || vehicle.category === 'Delivered') vehicle.category = 'Stock';
-  } else if (o.category === 'Delivered') vehicle.category = 'Delivered';
+  } else {
+    if (o.category === 'Delivered' || prev.category === 'Delivered') vehicle.category = 'Delivered';
+    else vehicle.category = 'Sold';
+  }
   return vehicle;
 }
 function naturalModelKey(model) {
@@ -382,11 +385,19 @@ module.exports = async function handler(req, res) {
     const result = [];
     let soldCount = 0, returnedCount = 0;
 
+    const newlySoldRegs = [];
     for (const [reg, old] of Object.entries(prevByReg)) {
       if (!liveRegs.has(reg)) {
-        const cat = old.category || 'Stock';
-        if (cat !== 'Sold' && cat !== 'Delivered') { old.category = 'Sold'; old.sold_date = today; soldCount++; }
+        const wasOnSite = !['Sold', 'Delivered'].includes(old.category || 'Stock');
         applyManual(old, old, overrides, false);
+        if (old.category !== 'Delivered') {
+          if (wasOnSite) {
+            old.sold_date = old.sold_date || today;
+            soldCount++;
+            newlySoldRegs.push(reg);
+          }
+          old.category = 'Sold';
+        }
         result.push(old);
       }
     }
@@ -446,6 +457,7 @@ module.exports = async function handler(req, res) {
       inStock: stockN,
       sold: soldN,
       newlySold: soldCount,
+      newlySoldRegs,
       returned: returnedCount,
       priced,
       withFeatures: result.filter(v => v.key_features && v.key_features.length).length,

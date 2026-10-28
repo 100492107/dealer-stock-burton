@@ -63,5 +63,16 @@
     "category": "Stock",
     "notes": [],
     "updatedAt": "2026-10-23T14:49:43.227Z"
+  },
+  "FG75LCC": {
+    "service_history": "",
+    "service_history_notes": "",
+    "status_flags": [
+      "Deposit Taken"
+    ],
+    "special_offer": "",
+    "category": "Stock",
+    "notes": [],
+    "updatedAt": "2026-10-28T11:53:25.303Z"
   }
 }

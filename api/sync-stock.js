@@ -1,11 +1,15 @@
 /**
  * POST/GET /api/sync-stock — Pentagon Burton stock + live prices; Sold when gone
- * Restores sold archive; Requires GITHUB_TOKEN
+ * Vercel Cron safe: parallel fetches, timeouts, retries, 409 SHA retry.
+ * Requires GITHUB_TOKEN (repo contents:write)
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
 const BRANCH = 'main';
 const BASE = 'https://www.pentagon-group.co.uk/inc-ajax-vehicle-results.php';
+const FETCH_TIMEOUT_MS = 18000;
+const GH_TIMEOUT_MS = 15000;
+
 const QUERIES = [
   { params: 'filter=1&franchise=Group&stockType=physical&vehType=car&payType=cash&make=any&model=any&grade=any&vehCond=used&budgetType=cash&minPrice=0&maxPrice=150000&location=BURTON&sort=price%20asc&limit=300', category: 'Stock' },
   { params: 'filter=1&franchise=Group&stockType=physical&vehType=car&payType=cash&make=any&model=any&grade=any&vehCond=new&budgetType=cash&minPrice=0&maxPrice=150000&location=BURTON&sort=price%20asc&limit=100', category: 'Stock' },
@@ -126,38 +130,109 @@ function parseBlocks(html, defaultCategory) {
   }
   return vehicles;
 }
+
+function withTimeout(ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return { signal: ctrl.signal, clear: () => clearTimeout(t) };
+}
+
+async function fetchWithRetry(url, opts = {}, retries = 1) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const to = withTimeout(FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { ...opts, signal: to.signal });
+      to.clear();
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.text();
+    } catch (e) {
+      to.clear();
+      lastErr = e;
+      if (attempt < retries) await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 async function fetchLive() {
   const byReg = {};
-  for (const q of QUERIES) {
-    const res = await fetch(BASE + '?' + q.params, { headers: { 'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest', Referer: 'https://www.pentagon-group.co.uk/used-cars-in-burton' } });
-    if (!res.ok) continue;
-    const html = await res.text();
-    for (const v of parseBlocks(html, q.category)) {
+  const errors = [];
+  const results = await Promise.all(
+    QUERIES.map(async (q) => {
+      try {
+        const html = await fetchWithRetry(BASE + '?' + q.params, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; DealerStockBurton/1.0)',
+            'X-Requested-With': 'XMLHttpRequest',
+            Referer: 'https://www.pentagon-group.co.uk/used-cars-in-burton',
+          },
+        }, 1);
+        return { category: q.category, html, ok: true };
+      } catch (e) {
+        errors.push(String(e.message || e));
+        return { category: q.category, html: '', ok: false };
+      }
+    })
+  );
+  for (const r of results) {
+    if (!r.ok || !r.html) continue;
+    for (const v of parseBlocks(r.html, r.category)) {
       const prev = byReg[v.registration];
       if (!prev || (v.image_url && !prev.image_url)) byReg[v.registration] = v;
     }
   }
-  return Object.values(byReg);
+  const list = Object.values(byReg);
+  if (!list.length && errors.length) throw new Error('All Pentagon fetches failed: ' + errors.join('; '));
+  return { list, scrapeErrors: errors };
 }
+
 async function gh(path, opts = {}) {
   const token = process.env.GITHUB_TOKEN;
   if (!token) throw new Error('GITHUB_TOKEN not set');
-  const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/${path}`, { ...opts, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json', ...(opts.headers || {}) } });
-  const data = await res.json().catch(() => ({}));
-  return { status: res.status, data };
+  const to = withTimeout(GH_TIMEOUT_MS);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/${path}`, {
+      ...opts,
+      signal: to.signal,
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+        ...(opts.headers || {}),
+      },
+    });
+    to.clear();
+    const data = await res.json().catch(() => ({}));
+    return { status: res.status, data };
+  } catch (e) {
+    to.clear();
+    throw e;
+  }
 }
+
 async function readJsonFile(path) {
   const file = await gh(`contents/${path}?ref=${BRANCH}`);
   if (file.status !== 200) return { data: path.endsWith('overrides.json') ? {} : [], sha: null };
-  const content = Buffer.from(file.data.content, 'base64').toString('utf8');
-  try { return { data: JSON.parse(content || '[]'), sha: file.data.sha }; } catch { return { data: path.endsWith('overrides.json') ? {} : [], sha: file.data.sha }; }
+  const content = Buffer.from(file.data.content || '', 'base64').toString('utf8');
+  try { return { data: JSON.parse(content || '[]'), sha: file.data.sha }; }
+  catch { return { data: path.endsWith('overrides.json') ? {} : [], sha: file.data.sha }; }
 }
+
 async function writeJsonFile(path, obj, sha, message) {
   const content = Buffer.from(JSON.stringify(obj), 'utf8').toString('base64');
   const body = { message, content, branch: BRANCH };
   if (sha) body.sha = sha;
-  return gh(`contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+  let result = await gh(`contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+  if (result.status === 409) {
+    const fresh = await readJsonFile(path);
+    body.sha = fresh.sha;
+    result = await gh(`contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+  }
+  return result;
 }
+
 const MANUAL = ['notes', 'service_history', 'service_history_notes', 'status_flags', 'special_offer'];
 function applyManual(vehicle, prev, overrides, isLive) {
   prev = prev || {};
@@ -178,56 +253,62 @@ function naturalModelKey(model) {
   const nums = m.match(/\d+/);
   return nums ? [0, parseInt(nums[0], 10), m.toLowerCase()] : [1, 0, m.toLowerCase()];
 }
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const started = Date.now();
   try {
-    const live = await fetchLive();
+    if (!process.env.GITHUB_TOKEN) {
+      return res.status(500).json({ ok: false, error: 'GITHUB_TOKEN not set on Vercel' });
+    }
+
+    const { list: live, scrapeErrors } = await fetchLive();
     const liveByReg = Object.fromEntries(live.map(v => [v.registration, v]));
-    const { data: previousRaw, sha: vehiclesSha } = await readJsonFile('vehicles.json');
-    const previous = Array.isArray(previousRaw) ? previousRaw : (previousRaw.vehicles || []);
-    const { data: overrides } = await readJsonFile('overrides.json');
+
+    const [vehFile, ovFile, soldFile] = await Promise.all([
+      readJsonFile('vehicles.json'),
+      readJsonFile('overrides.json'),
+      readJsonFile('sold_cars.json'),
+    ]);
+    const previous = Array.isArray(vehFile.data) ? vehFile.data : (vehFile.data && vehFile.data.vehicles) || [];
+    const overrides = ovFile.data && typeof ovFile.data === 'object' ? ovFile.data : {};
+    const archivedSold = Array.isArray(soldFile.data) ? soldFile.data : [];
+
     const prevByReg = Object.fromEntries(previous.filter(v => v.registration).map(v => [v.registration, v]));
     const liveRegs = new Set(Object.keys(liveByReg));
     const today = new Date().toISOString().slice(0, 10);
     const result = [];
     let soldCount = 0, returnedCount = 0;
+
     for (const [reg, old] of Object.entries(prevByReg)) {
       if (!liveRegs.has(reg)) {
         const cat = old.category || 'Stock';
         if (cat !== 'Sold' && cat !== 'Delivered') { old.category = 'Sold'; old.sold_date = today; soldCount++; }
-        applyManual(old, old, overrides || {}, false);
+        applyManual(old, old, overrides, false);
         result.push(old);
       }
     }
     for (const [reg, v] of Object.entries(liveByReg)) {
       const prev = prevByReg[reg];
       if (prev && (prev.category === 'Sold' || prev.category === 'Delivered')) returnedCount++;
-      applyManual(v, prev, overrides || {}, true);
+      applyManual(v, prev, overrides, true);
       if (v.category === 'Sold' || v.category === 'Delivered') { v.category = 'Stock'; delete v.sold_date; }
       result.push(v);
     }
-    // Restore archived sold cars not already in result
-    try {
-      const { data: archivedSold } = await readJsonFile('sold_cars.json');
-      if (Array.isArray(archivedSold)) {
-        const have = new Set(result.map(v => v.registration));
-        for (const v of archivedSold) {
-          if (!v || !v.registration) continue;
-          if (have.has(v.registration)) continue;
-          if (liveRegs.has(v.registration)) continue;
-          v.category = 'Sold';
-          result.push(v);
-          have.add(v.registration);
-        }
-      }
-    } catch (e) {}
-    try {
-      const soldRows = result.filter(v => v.category === 'Sold' || v.category === 'Delivered');
-      const { sha: soldSha } = await readJsonFile('sold_cars.json');
-      await writeJsonFile('sold_cars.json', soldRows, soldSha, 'Update sold archive');
-    } catch (e) {}
+
+    const have = new Set(result.map(v => v.registration));
+    for (const v of archivedSold) {
+      if (!v || !v.registration) continue;
+      if (have.has(v.registration) || liveRegs.has(v.registration)) continue;
+      v.category = 'Sold';
+      result.push(v);
+      have.add(v.registration);
+    }
+
     result.sort((a, b) => {
       const aOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(a.category) ? 0 : 1;
       const bOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(b.category) ? 0 : 1;
@@ -240,17 +321,46 @@ module.exports = async function handler(req, res) {
       if (ka[2] !== kb[2]) return ka[2].localeCompare(kb[2]);
       return (a.retail_price ?? 1e12) - (b.retail_price ?? 1e12);
     });
-    const writeV = await writeJsonFile('vehicles.json', result, vehiclesSha, `Stock sync: ${live.length} live, ${soldCount} newly sold`);
-    if (writeV.status !== 200 && writeV.status !== 201) return res.status(500).json({ error: 'Failed to write vehicles.json', detail: writeV.data });
-    const imgs = {};
-    for (const v of result) if (v.image_url) imgs[v.registration] = v.image_url;
-    const { sha: imgSha } = await readJsonFile('images_map.json');
-    await writeJsonFile('images_map.json', imgs, imgSha, 'Update images_map after stock sync');
+
+    const writeV = await writeJsonFile('vehicles.json', result, vehFile.sha, `Stock sync: ${live.length} live, ${soldCount} newly sold`);
+    if (writeV.status !== 200 && writeV.status !== 201) {
+      return res.status(500).json({ ok: false, error: 'Failed to write vehicles.json', detail: writeV.data, status: writeV.status });
+    }
+
+    try {
+      const soldRows = result.filter(v => v.category === 'Sold' || v.category === 'Delivered');
+      await writeJsonFile('sold_cars.json', soldRows, soldFile.sha, 'Update sold archive');
+    } catch (_) {}
+    try {
+      const imgs = {};
+      for (const v of result) if (v.image_url) imgs[v.registration] = v.image_url;
+      const { sha: imgSha } = await readJsonFile('images_map.json');
+      await writeJsonFile('images_map.json', imgs, imgSha, 'Update images_map after stock sync');
+    } catch (_) {}
+
     const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(v.category)).length;
     const soldN = result.filter(v => v.category === 'Sold').length;
     const priced = result.filter(v => v.retail_price).length;
-    return res.status(200).json({ ok: true, live: live.length, inStock: stockN, sold: soldN, newlySold: soldCount, returned: returnedCount, priced, total: result.length, at: new Date().toISOString() });
+
+    return res.status(200).json({
+      ok: true,
+      live: live.length,
+      inStock: stockN,
+      sold: soldN,
+      newlySold: soldCount,
+      returned: returnedCount,
+      priced,
+      total: result.length,
+      scrapeErrors: scrapeErrors.length ? scrapeErrors : undefined,
+      ms: Date.now() - started,
+      at: new Date().toISOString(),
+    });
   } catch (e) {
-    return res.status(500).json({ error: String(e.message || e) });
+    return res.status(500).json({
+      ok: false,
+      error: String(e.message || e),
+      ms: Date.now() - started,
+      at: new Date().toISOString(),
+    });
   }
 };

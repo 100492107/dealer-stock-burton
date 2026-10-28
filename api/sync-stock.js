@@ -1,6 +1,6 @@
 /**
  * POST/GET /api/sync-stock — Pentagon Burton stock + live prices; Sold when gone
- * Reserved stays in Stock with badge. Invalid regs cleaned. Requires GITHUB_TOKEN
+ * New cars without plates use stock ids. Reserved stays in Stock with badge.
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -11,7 +11,7 @@ const GH_TIMEOUT_MS = 15000;
 
 const QUERIES = [
   { params: 'filter=1&franchise=Group&stockType=physical&vehType=car&payType=cash&make=any&model=any&grade=any&vehCond=used&budgetType=cash&minPrice=0&maxPrice=150000&location=BURTON&sort=price%20asc&limit=300', category: 'Stock' },
-  { params: 'filter=1&franchise=Group&stockType=physical&vehType=car&payType=cash&make=any&model=any&grade=any&vehCond=new&budgetType=cash&minPrice=0&maxPrice=150000&location=BURTON&sort=price%20asc&limit=100', category: 'Stock' },
+  { params: 'filter=1&franchise=Group&stockType=physical&vehType=car&payType=cash&make=any&model=any&grade=any&vehCond=new&budgetType=cash&minPrice=0&maxPrice=150000&location=BURTON&sort=price%20asc&limit=100', category: 'New' },
   { params: 'filter=1&franchise=Group&stockType=physical&vehType=van&payType=cash&make=any&model=any&grade=any&vehCond=used&budgetType=cash&minPrice=0&maxPrice=150000&location=BURTON&sort=price%20asc&limit=100', category: 'Commercials' },
 ];
 
@@ -154,12 +154,18 @@ function parseBlocks(html, defaultCategory) {
   let match;
   while ((match = re.exec(html))) {
     const [, vid, attrs, body] = match;
-    const reg = extractReg(body);
-    if (!reg) continue;
     const colourM = attrs.match(/data-colour="([^"]*)"/);
     const colour = colourM ? colourM[1].replace(/\b\w/g, c => c.toUpperCase()) : '';
     const hrefM = body.match(/href="(\/(?:used-cars|used-vans|new-cars-in-stock)\/[^"]+)"/);
     const href = hrefM ? hrefM[1].replace(/\/print$/, '') : '';
+    const isNewCar = /\/new-cars-in-stock\//.test(href) || defaultCategory === 'New';
+    let reg = extractReg(body);
+    if (!reg && isNewCar) {
+      let m = body.match(/used-vehicle-photos\/\d+\/([A-Z0-9]{6,})-/i);
+      if (m) reg = m[1].toUpperCase();
+      else reg = 'NEW' + vid;
+    }
+    if (!reg) continue;
     const parts = href.replace(/^\/+|\/+$/g, '').split('/');
     let make = fixMake(parts[1] || '');
     let model = (parts[2] || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -222,7 +228,9 @@ function parseBlocks(html, defaultCategory) {
     const flags = /photos available soon/i.test(text) ? ['Awaiting Prep'] : [];
     const is_reserved = /\breserved\b|under\s*offer|deposit\s*taken|sale\s*agreed/i.test(text);
     if (is_reserved) flags.push('Reserved');
-    vehicles.push({ id: reg, registration: reg, make, model, derivative, mileage: miles, transmission: trans, fuel, model_year: year, colour, category: defaultCategory, retail_price: price, bring_into_stock_date: new Date().toISOString().slice(0, 10), service_history: '', service_history_notes: '', status_flags: flags, notes: [], special_offer: '', image_url, detail_url: href ? 'https://www.pentagon-group.co.uk' + href : '', peg_number: vid, source: 'pentagon-burton', key_features: [], is_reserved: !!is_reserved });
+    if (isNewCar) flags.push('New');
+    const category = isNewCar ? 'New' : defaultCategory;
+    vehicles.push({ id: reg, registration: reg, make, model, derivative, mileage: miles, transmission: trans, fuel, model_year: year, colour, category, retail_price: price, bring_into_stock_date: new Date().toISOString().slice(0, 10), service_history: '', service_history_notes: '', status_flags: flags, notes: [], special_offer: '', image_url, detail_url: href ? 'https://www.pentagon-group.co.uk' + href : '', peg_number: vid, source: 'pentagon-burton', key_features: [], is_reserved: !!is_reserved });
   }
   return vehicles;
 }
@@ -339,7 +347,7 @@ function applyManual(vehicle, prev, overrides, isLive) {
   if (prev.key_features && (!vehicle.key_features || !vehicle.key_features.length)) vehicle.key_features = prev.key_features;
   if (isLive) {
     delete vehicle.sold_date;
-    const manual = o.category || (['Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(prev.category) ? prev.category : null);
+    const manual = o.category || (['Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(prev.category) ? prev.category : null);
     if (manual && manual !== 'Sold' && manual !== 'Delivered') vehicle.category = manual;
     else if (vehicle.category === 'Sold' || vehicle.category === 'Delivered') vehicle.category = 'Stock';
   } else {
@@ -407,6 +415,9 @@ module.exports = async function handler(req, res) {
       if (prev && (prev.category === 'Sold' || prev.category === 'Delivered')) returnedCount++;
       applyManual(v, prev, overrides, true);
       if (v.category === 'Sold' || v.category === 'Delivered') { v.category = 'Stock'; delete v.sold_date; }
+      if ((v.status_flags || []).includes('New')) {
+        if (!['Demonstrators','Pre-reg','Commercials'].includes(v.category)) v.category = 'New';
+      }
       if (v.is_reserved) {
         v.status_flags = Array.from(new Set([...(v.status_flags || []).filter(f => f !== 'Reserved'), 'Reserved']));
       } else if (v.status_flags && v.status_flags.length) {
@@ -426,8 +437,8 @@ module.exports = async function handler(req, res) {
     }
 
     result.sort((a, b) => {
-      const aOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(a.category) ? 0 : 1;
-      const bOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(b.category) ? 0 : 1;
+      const aOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(a.category) ? 0 : 1;
+      const bOn = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(b.category) ? 0 : 1;
       if (aOn !== bOn) return aOn - bOn;
       const mk = (a.make || '').toLowerCase().localeCompare((b.make || '').toLowerCase());
       if (mk) return mk;
@@ -454,8 +465,9 @@ module.exports = async function handler(req, res) {
       await writeJsonFile('images_map.json', imgs, imgSha, 'Update images_map after stock sync');
     } catch (_) {}
 
-    const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(v.category)).length;
+    const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(v.category)).length;
     const soldN = result.filter(v => v.category === 'Sold').length;
+    const newN = result.filter(v => v.category === 'New').length;
     const priced = result.filter(v => v.retail_price).length;
     const reservedN = result.filter(v => (v.status_flags || []).includes('Reserved')).length;
 
@@ -463,6 +475,7 @@ module.exports = async function handler(req, res) {
       ok: true,
       live: live.length,
       inStock: stockN,
+      newCars: newN,
       sold: soldN,
       newlySold: soldCount,
       newlySoldRegs,

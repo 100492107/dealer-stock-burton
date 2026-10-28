@@ -46,14 +46,14 @@
     "service_history_notes": "",
     "status_flags": [],
     "special_offer": "",
-    "category": "Stock",
+    "category": "Sold",
     "notes": [
       {
         "date": "23/10/2026, 10:49:16",
         "text": "Gearbox Service done Jan 2026"
       }
     ],
-    "updatedAt": "2026-10-23T09:49:17.088Z"
+    "updatedAt": "2026-10-28T12:53:29.418Z"
   },
   "DF65CUK": {
     "service_history": "",

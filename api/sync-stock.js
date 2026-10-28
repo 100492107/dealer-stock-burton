@@ -1,7 +1,6 @@
 /**
  * POST/GET /api/sync-stock — Pentagon Burton stock + live prices; Sold when gone
- * Vercel Cron safe: parallel fetches, timeouts, retries, feature scrape.
- * Requires GITHUB_TOKEN (repo contents:write)
+ * Reserved stays in Stock with badge. Invalid regs cleaned. Requires GITHUB_TOKEN
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -24,7 +23,7 @@ function fixMake(m) {
 function isValidUkReg(reg) {
   if (!reg) return false;
   const r = reg.replace(/\s+/g, '').toUpperCase();
-  return /^[A-Z]{2}\d{2}[A-Z]{3}$/.test(r) || /^[A-Z]\d{1,3}[A-Z]{3}$/.test(r) || /^\d{2}[A-Z]\d{6}$/.test(r) || /^\d{2}[A-Z]{2}\d{5}$/.test(r);
+  return /^[A-Z]{2}\d{2}[A-Z]{3}$/.test(r) || /^[A-Z]\d{1,3}[A-Z]{3}$/.test(r) || /^[A-Z]{3}\d{1,3}[A-Z]$/.test(r);
 }
 function extractReg(body) {
   const candidates = [];
@@ -221,7 +220,9 @@ function parseBlocks(html, defaultCategory) {
     if (/\b(Automatic|CVT|S tronic|EAT|DSG|Auto)\b/i.test(text)) trans = 'Automatic';
     else if (/\bManual\b/i.test(text)) trans = 'Manual';
     const flags = /photos available soon/i.test(text) ? ['Awaiting Prep'] : [];
-    vehicles.push({ id: reg, registration: reg, make, model, derivative, mileage: miles, transmission: trans, fuel, model_year: year, colour, category: defaultCategory, retail_price: price, bring_into_stock_date: new Date().toISOString().slice(0, 10), service_history: '', service_history_notes: '', status_flags: flags, notes: [], special_offer: '', image_url, detail_url: href ? 'https://www.pentagon-group.co.uk' + href : '', peg_number: vid, source: 'pentagon-burton', key_features: [] });
+    const is_reserved = /\breserved\b|under\s*offer|deposit\s*taken|sale\s*agreed/i.test(text);
+    if (is_reserved) flags.push('Reserved');
+    vehicles.push({ id: reg, registration: reg, make, model, derivative, mileage: miles, transmission: trans, fuel, model_year: year, colour, category: defaultCategory, retail_price: price, bring_into_stock_date: new Date().toISOString().slice(0, 10), service_history: '', service_history_notes: '', status_flags: flags, notes: [], special_offer: '', image_url, detail_url: href ? 'https://www.pentagon-group.co.uk' + href : '', peg_number: vid, source: 'pentagon-burton', key_features: [], is_reserved: !!is_reserved });
   }
   return vehicles;
 }
@@ -406,6 +407,12 @@ module.exports = async function handler(req, res) {
       if (prev && (prev.category === 'Sold' || prev.category === 'Delivered')) returnedCount++;
       applyManual(v, prev, overrides, true);
       if (v.category === 'Sold' || v.category === 'Delivered') { v.category = 'Stock'; delete v.sold_date; }
+      if (v.is_reserved) {
+        v.status_flags = Array.from(new Set([...(v.status_flags || []).filter(f => f !== 'Reserved'), 'Reserved']));
+      } else if (v.status_flags && v.status_flags.length) {
+        v.status_flags = v.status_flags.filter(f => f !== 'Reserved');
+      }
+      delete v.is_reserved;
       result.push(v);
     }
 
@@ -450,6 +457,7 @@ module.exports = async function handler(req, res) {
     const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(v.category)).length;
     const soldN = result.filter(v => v.category === 'Sold').length;
     const priced = result.filter(v => v.retail_price).length;
+    const reservedN = result.filter(v => (v.status_flags || []).includes('Reserved')).length;
 
     return res.status(200).json({
       ok: true,
@@ -458,6 +466,7 @@ module.exports = async function handler(req, res) {
       sold: soldN,
       newlySold: soldCount,
       newlySoldRegs,
+      reserved: reservedN,
       returned: returnedCount,
       priced,
       withFeatures: result.filter(v => v.key_features && v.key_features.length).length,

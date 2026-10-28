@@ -365,6 +365,13 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   .list-row { break-inside: avoid; }
   .list-brand { break-after: avoid; }
 }
+
+.feature-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.35rem; }
+.feat {
+  font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px;
+  background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; line-height: 1.2;
+}
+.feat.more { background: var(--bg-soft); color: var(--muted); border-color: var(--border); }
 </style>
 
 </head>
@@ -792,6 +799,14 @@ function toggleImages() {
   renderList();
 }
 
+function featureChips(v, limit) {
+  const feats = Array.isArray(v.key_features) ? v.key_features : [];
+  if (!feats.length) return '';
+  const show = feats.slice(0, limit || 5);
+  const more = feats.length - show.length;
+  return `<div class="feature-chips">${show.map(f => `<span class="feat">${f}</span>`).join('')}${more > 0 ? `<span class="feat more">+${more}</span>` : ''}</div>`;
+}
+
 function cardHtml(v) {
   const flags = (v.status_flags || []).map(f => `<span class="flag">${f}</span>`).join('');
   let img = '';
@@ -808,6 +823,7 @@ function cardHtml(v) {
       <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
       <div class="reg">${v.registration || ''}</div>
       <div class="colour">${v.colour || ''}</div>
+      ${featureChips(v, 4)}
       ${catBadge(v)}${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
     </div>
   </div>`;
@@ -991,6 +1007,7 @@ function openDetail(id) {
           <h3>Spec</h3>
           <p style="font-size:0.85rem">${formatSpec(v.derivative)||'—'}</p>
         </div>
+        ${(v.key_features && v.key_features.length) ? `<div class="info-box"><h3>Key features</h3>${featureChips(v, 12)}</div>` : ''}
         <div class="info-box">
           <h3>Flags</h3>
           <p style="font-size:0.85rem">${(v.status_flags||[]).join(', ') || '—'}</p>

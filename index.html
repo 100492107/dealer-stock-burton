@@ -608,8 +608,9 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 }
 .vd-service-fsh .vd-service-badge { background: #047857; }
 .vd-service-notes { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+.vd-notes { background: #fff; border-radius: 12px; padding: 0.85rem; border: 1px solid var(--border); }
 .vd-note {
-  background: #fff; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;
   padding: 0.65rem 0.75rem; margin-bottom: 0.5rem;
 }
 .vd-note-meta { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-bottom: 0.25rem; }
@@ -643,6 +644,9 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
     box-shadow: 0 -4px 16px rgba(15,23,42,0.06);
   }
   .vd-actions-mobile .btn { flex: 1; min-height: 46px; font-weight: 600; }
+  .vd-notes { background: #fff !important; }
+  .vd-note { background: #f1f5f9 !important; }
+  .vd-note-form textarea { background: #fff !important; }
   .modal-header .btn-secondary,
   .modal-header .btn-primary.btn-lg { display: none; }
 }
@@ -1333,8 +1337,6 @@ function openDetail(id) {
         <div class="vd-section">
           <h3 class="vd-section-title">Details</h3>
           <dl class="vd-dl">
-            <div><dt>Body</dt><dd>${v.body_type || '—'}</dd></div>
-            <div><dt>Doors</dt><dd>${v.doors || '—'}</dd></div>
             <div><dt>Colour</dt><dd>${v.colour || '—'}</dd></div>
             <div><dt>Category</dt><dd>${v.category || 'Stock'}</dd></div>
           </dl>

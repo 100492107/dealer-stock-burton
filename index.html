@@ -666,6 +666,17 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 .feat-panel[hidden] { display: none !important; }
 .feature-chips-all { margin-top: 0; }
 .feature-chips-all .feat { font-size: 0.72rem; padding: 0.25rem 0.5rem; }
+
+.vd-peg-dd { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.vd-peg-input {
+  flex: 1; min-width: 100px; max-width: 160px;
+  padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem; font-weight: 600; letter-spacing: 0.03em;
+  background: #fff;
+}
+.vd-peg-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); }
+.btn-peg-save { min-height: 36px; padding: 0.35rem 0.75rem; font-size: 0.8rem; }
 </style>
 
 </head>
@@ -1127,6 +1138,23 @@ function featureChips(v, limit) {
   }
   return html;
 }
+
+async function savePegNumber() {
+  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
+  if (!v) return;
+  const input = document.getElementById('detailPeg');
+  if (!input) return;
+  const peg = (input.value || '').trim();
+  v.peg_number = peg;
+  try { save(); } catch (_) {}
+  const btn = document.querySelector('.btn-peg-save');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  const r = await sharedSave({ registration: v.registration, peg_number: peg });
+  if (btn) { btn.disabled = false; btn.textContent = r.ok ? 'Saved' : 'Save'; }
+  if (!r.ok) alert('PEG saved on this device only — shared save failed: ' + (r.error || ''));
+  else setTimeout(() => { if (btn) btn.textContent = 'Save'; }, 1500);
+}
+
 function toggleFeatPanel(e) {
   e.preventDefault();
   e.stopPropagation();
@@ -1386,6 +1414,13 @@ function openDetail(id) {
           <h3 class="vd-section-title">Details</h3>
           <dl class="vd-dl">
             <div><dt>Colour</dt><dd>${v.colour || '—'}</dd></div>
+            <div class="vd-peg-field">
+              <dt>PEG number</dt>
+              <dd class="vd-peg-dd">
+                <input type="text" id="detailPeg" class="vd-peg-input" value="${String(v.peg_number || '').replace(/"/g,'&quot;')}" placeholder="Enter PEG…" autocomplete="off">
+                <button type="button" class="btn btn-secondary btn-peg-save" onclick="savePegNumber()">Save</button>
+              </dd>
+            </div>
             <div><dt>Category</dt><dd>${v.category || 'Stock'}</dd></div>
           </dl>
         </div>
@@ -1688,6 +1723,9 @@ function applyOverridesToVehicles(overrides) {
     }
     if (o.service_history_notes != null && o.service_history_notes !== v.service_history_notes) {
       v.service_history_notes = o.service_history_notes; changed = true;
+    }
+    if (o.peg_number != null && String(o.peg_number) !== String(v.peg_number || '')) {
+      v.peg_number = o.peg_number; changed = true;
     }
     if (o.status_flags != null && JSON.stringify(o.status_flags) !== JSON.stringify(v.status_flags || [])) {
       v.status_flags = o.status_flags; changed = true;

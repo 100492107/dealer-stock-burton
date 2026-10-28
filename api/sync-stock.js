@@ -75,12 +75,10 @@ function isDesirableFeature(name) {
   return DESIRABLE_RE.some(re => re.test(n));
 }
 
-/** Concrete kit only — never vague "X Styling" labels */
 function inferTrimFeatures(v) {
   const blob = [v.make, v.model, v.derivative].filter(Boolean).join(' ').toLowerCase();
   const out = [];
   const add = (...items) => items.forEach(i => { if (i && !out.includes(i)) out.push(i); });
-
   if (/heated\s*seat/.test(blob)) add('Heated Seats');
   if (/ventilated\s*seat|cooled\s*seat|cooling\s*seat/.test(blob)) add('Ventilated Seats');
   if (/massage\s*seat/.test(blob)) add('Massage Seats');
@@ -100,7 +98,6 @@ function inferTrimFeatures(v) {
   if (/power\s*tailgate|electric\s*(?:tailgate|boot)|hands.?free\s*(?:tailgate|boot)/.test(blob)) add('Power Tailgate');
   if (/leather|nappa|alcantara/.test(blob)) add('Leather Seats');
   if (/ambient\s*light/.test(blob)) add('Ambient Lighting');
-
   const high = /\bm\s*sport\b|\bs\s*line\b|\bamg\s*line\b|\br[\s-]?line\b|\bgt\s*line\b|\bgt[\s-]?line\b|\bn[\s-]?line\b|\bst[\s-]?line\b|\bultimate\b|\bvignale\b|\bf\s*sport\b|\bcupra\b|\bgti\b|\bgtd\b/.test(blob);
   if (high) add('LED Headlights', 'Parking Sensors');
   if (/\bm\s*sport\b|\bamg\s*line\b|\bs\s*line\b|\bcupra\b|\bgti\b|\br[\s-]?line\b/.test(blob)) {
@@ -111,7 +108,6 @@ function inferTrimFeatures(v) {
   }
   if (/\bvirtual\s*cockpit\b/.test(blob)) add('Virtual Cockpit');
   if (/\bi[\s-]?cockpit\b/.test(blob)) add('Digital Cockpit');
-
   return out;
 }
 
@@ -126,10 +122,11 @@ function featurePriority(name) {
   const n = String(name || '').toLowerCase();
   const high = [
     /heated seat/, /ventilated seat/, /cooled seat/, /massage seat/, /electric seat/, /power seat/, /memory seat/,
+    /leather|nappa|alcantara/,
     /wireless charg/, /panoramic|pan roof|sunroof|glass roof/,
     /carplay|android auto/, /bose|harman|premium (audio|sound)|meridian|bang/,
     /heated steering/, /head-?up|\bhud\b/, /360|surround camera/, /matrix led/,
-    /leather|nappa/, /ambient light/, /adaptive cruise/, /power tailgate|electric (tailgate|boot)/,
+    /ambient light/, /adaptive cruise/, /power tailgate|electric (tailgate|boot)/,
   ];
   if (high.some(re => re.test(n))) return 0;
   return 1;
@@ -141,14 +138,16 @@ function mergeFeatures(scraped, inferred) {
   for (const list of [scraped || [], inferred || []]) {
     for (const f of list) {
       if (isVagueFeature(f)) continue;
-      const k = String(f).toLowerCase().trim();
+      let label = String(f).trim();
+      if (/^leather\b/i.test(label) && !/seat/i.test(label)) label = 'Leather Seats';
+      const k = label.toLowerCase();
       if (!k || seen.has(k)) continue;
       seen.add(k);
-      out.push(f);
+      out.push(label);
     }
   }
   out.sort((a, b) => featurePriority(a) - featurePriority(b));
-  return out.slice(0, 12);
+  return out.slice(0, 24);
 }
 
 function extractFeaturesFromDetail(html) {
@@ -169,7 +168,7 @@ function extractFeaturesFromDetail(html) {
     if (seen.has(key)) continue;
     if (isDesirableFeature(name)) { seen.add(key); found.push(name); }
   }
-  return found.slice(0, 10);
+  return found.slice(0, 16);
 }
 
 async function fetchKeyFeatures(detailUrl) {
@@ -282,7 +281,7 @@ function parseBlocks(html, defaultCategory) {
       if (!priceM) priceM = body.match(/Our Price<\/small>\s*<b[^>]*>[^0-9]*([0-9,]{3,})/i);
       if (!priceM) priceM = body.match(/<b[^>]*>[^0-9]*([0-9,]{4,})[^0-9]*<\/b>/i);
       if (priceM) {
-        const n = parseFloat(String(priceM[1]).replace(/,/g, ''));
+        const n = parseFloat(String(priceM[1].replace(/,/g, '')));
         if (!isNaN(n) && n > 0) price = n;
       }
     }
@@ -415,11 +414,11 @@ async function writeJsonFile(path, obj, sha, message) {
   return result;
 }
 
-const MANUAL = ['notes', 'service_history', 'service_history_notes', 'status_flags', 'special_offer'];
+const MANUAL = ['notes', 'service_history', 'service_history_notes', 'status_flags', 'special_offer', 'peg_number'];
 function applyManual(vehicle, prev, overrides, isLive) {
   prev = prev || {};
   const o = overrides[vehicle.registration] || overrides[vehicle.id] || {};
-  for (const key of MANUAL) { if (o[key] != null) vehicle[key] = o[key]; else if (prev[key]) vehicle[key] = prev[key]; }
+  for (const key of MANUAL) { if (o[key] != null) vehicle[key] = o[key]; else if (prev[key] != null && key === 'peg_number') vehicle[key] = prev[key]; else if (prev[key]) vehicle[key] = prev[key]; }
   if (prev.bring_into_stock_date) vehicle.bring_into_stock_date = prev.bring_into_stock_date;
   if ((!vehicle.status_flags || !vehicle.status_flags.length) && prev.status_flags) vehicle.status_flags = prev.status_flags;
   if (prev.key_features && (!vehicle.key_features || !vehicle.key_features.length)) vehicle.key_features = prev.key_features;

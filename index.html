@@ -282,33 +282,29 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
 
   .top-nav {
     position: sticky; top: 0; z-index: 50;
-    flex-wrap: wrap; height: auto; min-height: 52px;
-    padding: 0.5rem 0.65rem;
+    display: flex; flex-wrap: nowrap; align-items: center;
+    height: auto; min-height: 52px;
+    padding: 0.5rem 0.75rem;
     padding-top: max(0.5rem, env(safe-area-inset-top));
-    padding-left: max(0.65rem, env(safe-area-inset-left));
-    padding-right: max(0.65rem, env(safe-area-inset-right));
-    gap: 0.4rem;
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    gap: 0.5rem;
   }
-  .brand { min-height: 44px; padding: 0.25rem 0.35rem; }
-  .brand-logo { width: 36px; height: 36px; }
-  .brand-text { font-size: 0.95rem; }
-  .nav-right { gap: 0.35rem; }
+  .brand {
+    flex: 1 1 auto; min-width: 0; max-width: none;
+    min-height: 44px; padding: 0.25rem 0.2rem;
+  }
+  .brand-logo { width: 36px; height: 36px; flex-shrink: 0; }
+  .brand-text { font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-right {
+    flex: 0 0 auto; margin-left: auto;
+    gap: 0.35rem;
+  }
   .nav-right .btn-ghost, .nav-right button {
     min-height: 40px; min-width: 40px; padding: 0.4rem 0.65rem;
   }
-  .nav-links {
-    order: 3; width: 100%;
-    display: flex; flex-wrap: nowrap;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    gap: 0.35rem; padding: 0.15rem 0 0.35rem;
-    scrollbar-width: none;
-  }
-  .nav-links::-webkit-scrollbar { display: none; }
-  .nav-links button {
-    flex: 0 0 auto;
-    padding: 0.45rem 0.85rem; min-height: 38px;
-    border-radius: 999px; font-size: 0.82rem; white-space: nowrap;
-  }
+  /* Desktop-style tabs hidden on phone — category uses select below */
+  .nav-links { display: none !important; }
   .sync-status, .nav-right .sync-status { display: none; }
   #syncStatusMobile { display: block; font-size: 0.75rem; color: var(--muted); margin: 0 0 0.5rem; }
 
@@ -405,7 +401,7 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
   .hide-xs { display: none !important; }
   .vehicle-card .card-img,
   .vehicle-card .card-img-placeholder { width: 34%; max-width: 120px; min-height: 100px; }
-  .nav-links button { padding: 0.4rem 0.7rem; font-size: 0.78rem; }
+  .nav-links button { padding: 0.45rem 0.35rem; font-size: 0.74rem; flex: 1 1 calc(50% - 0.35rem); max-width: none; }
 }
 @media print {
   .top-nav, .no-print, .overlay, .filters-bar, .search-box { display: none !important; }
@@ -482,6 +478,68 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 .feat.more { background: var(--bg-soft); color: var(--muted); border-color: var(--border); }
 
 .flag-reserved { background: #fef3c7 !important; color: #92400e !important; border: 1px solid #fcd34d; font-weight: 700; }
+
+/* Mobile category chips — premium strip */
+.mobile-cat-bar {
+  display: none;
+  position: sticky;
+  top: 52px;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 0.55rem 0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.mobile-cat-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 0.85rem;
+  padding: 0.1rem 0.85rem;
+  padding-left: max(0.85rem, env(safe-area-inset-left));
+  padding-right: max(1.75rem, env(safe-area-inset-right));
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 32px), transparent 100%);
+}
+.mobile-cat-scroll::-webkit-scrollbar { display: none; }
+.cat-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  appearance: none;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.55rem 1.05rem;
+  min-height: 40px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-chip:active { transform: scale(0.97); }
+.cat-chip.active {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2a4a73 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(30, 58, 95, 0.3);
+}
+@media (min-width: 721px) {
+  .mobile-cat-bar { display: none !important; }
+}
+@media (max-width: 720px) {
+  .mobile-cat-bar { display: block !important; }
+}
 </style>
 
 </head>
@@ -509,7 +567,23 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
     <button type="button" class="btn-ghost" onclick="location.reload()" title="Reload page">↻ Refresh</button>
     <button type="button" onclick="openForm()">+ Add vehicle</button>
   </div>
+
 </nav>
+
+<!-- Mobile category chips (desktop keeps top tabs) -->
+<div class="mobile-cat-bar" id="mobileCatBar" aria-label="Category">
+  <div class="mobile-cat-scroll" id="mobileCatScroll">
+    <button type="button" class="cat-chip active" data-cat="Stock">Stock</button>
+    <button type="button" class="cat-chip" data-cat="New">New</button>
+    <button type="button" class="cat-chip" data-cat="Sold">Sold</button>
+    <button type="button" class="cat-chip" data-cat="Demonstrators">Demonstrators</button>
+    <button type="button" class="cat-chip" data-cat="Pre-reg">Pre-reg</button>
+    <button type="button" class="cat-chip" data-cat="Commercials">Commercials</button>
+    <button type="button" class="cat-chip" data-cat="Arriving Soon">Arriving</button>
+    <button type="button" class="cat-chip" data-cat="Delivered">Delivered</button>
+    <button type="button" class="cat-chip" data-cat="All">All</button>
+  </div>
+</div>
 
 <div class="container">
   <div class="page-header">
@@ -795,10 +869,7 @@ function startReliableSync() {
 
 
 function goHome() {
-  currentCat = 'Stock';
-  document.querySelectorAll('#navLinks button').forEach(b => {
-    b.classList.toggle('active', b.getAttribute('data-cat') === 'Stock');
-  });
+  setCategory('Stock');
   const s = document.getElementById('searchInput');
   if (s) s.value = '';
   const fuel = document.getElementById('filterFuel');
@@ -1276,13 +1347,35 @@ function saveVehicle(e) {
   });
 }
 
+
+function setCategory(cat) {
+  currentCat = cat || 'Stock';
+  document.querySelectorAll('#navLinks button').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-cat') === currentCat);
+  });
+  document.querySelectorAll('#mobileCatScroll .cat-chip').forEach(b => {
+    const on = b.getAttribute('data-cat') === currentCat;
+    b.classList.toggle('active', on);
+    if (on) {
+      try { b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (_) {}
+    }
+  });
+  renderList();
+}
+
 document.getElementById('navLinks').addEventListener('click', e => {
   if (e.target.tagName !== 'BUTTON') return;
-  document.querySelectorAll('#navLinks button').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  currentCat = e.target.dataset.cat;
-  renderList();
+  setCategory(e.target.dataset.cat);
 });
+const mobileCatScroll = document.getElementById('mobileCatScroll');
+if (mobileCatScroll) {
+  mobileCatScroll.addEventListener('click', e => {
+    const btn = e.target.closest('.cat-chip');
+    if (!btn) return;
+    setCategory(btn.getAttribute('data-cat'));
+  });
+}
+
 document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') renderList(); });
 document.querySelectorAll('.overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeForm(); } });

@@ -333,6 +333,38 @@ legend { font-size: 0.82rem; font-weight: 600; padding: 0 0.25rem; }
 body.hide-images .vehicle-grid {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
+
+.list-view-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.list-view-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border);
+  font-size: 0.85rem; color: var(--muted); font-weight: 600;
+}
+.stock-list-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.stock-list-table th {
+  text-align: left; padding: 0.5rem 0.75rem; font-size: 0.72rem; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--muted); border-bottom: 2px solid var(--border); background: var(--bg-soft);
+}
+.stock-list-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.stock-list-table tr.list-row { cursor: pointer; }
+.stock-list-table tr.list-row:hover { background: var(--primary-dim); }
+.list-brand td {
+  background: var(--bg-soft); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--primary); padding-top: 0.65rem; border-bottom: 1px solid #b8c7de;
+}
+.list-reg { font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; width: 7.5rem; }
+.list-name { color: var(--text); }
+.list-year { width: 4rem; color: var(--muted); }
+.list-miles { width: 5.5rem; text-align: right; white-space: nowrap; color: var(--muted); }
+.list-price { width: 6rem; text-align: right; font-weight: 700; color: var(--primary); white-space: nowrap; }
+body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok */ }
+@media print {
+  .top-nav, .filters-bar, .search-box, .page-header .search-box, .list-view-toolbar, .no-print { display: none !important; }
+  .list-view-wrap { border: none; box-shadow: none; }
+  .stock-list-table { font-size: 11px; }
+  .list-row { break-inside: avoid; }
+  .list-brand { break-after: avoid; }
+}
 </style>
 
 </head>
@@ -355,7 +387,6 @@ body.hide-images .vehicle-grid {
   </div>
   <div class="nav-right">
     <span class="sync-status" id="syncStatus">Loading…</span>
-    <button type="button" class="btn-ghost" onclick="printStockList()" title="Print compact desk list of current view">🖨 <span class="hide-xs">Print </span>list</button>
     <button type="button" class="btn-ghost" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ <span class="hide-xs">Sync </span>stock</button>
     <button type="button" class="btn-ghost" onclick="location.reload()" title="Reload page">↻ Refresh</button>
     <button type="button" onclick="openForm()">+ Add vehicle</button>
@@ -376,6 +407,9 @@ body.hide-images .vehicle-grid {
     <div class="filter-row">
       <label class="filter-toggle">Photos
         <button type="button" class="btn-toggle-images" id="toggleImagesBtn" onclick="toggleImages()" title="Show or hide vehicle photos" aria-pressed="true">On</button>
+      </label>
+      <label class="filter-toggle">List view
+        <button type="button" class="btn-toggle-images off" id="toggleListBtn" onclick="toggleListView()" title="Compact list: name, price, mileage" aria-pressed="false">Off</button>
       </label>
       <label>Fuel
         <select id="filterFuel" onchange="renderList()">
@@ -780,135 +814,58 @@ function cardHtml(v) {
 }
 
 
-function getFilteredList() {
-  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-  const fuel = (document.getElementById('filterFuel') || {}).value || '';
-  const minP = parseFloat((document.getElementById('filterMinPrice') || {}).value);
-  const maxP = parseFloat((document.getElementById('filterMaxPrice') || {}).value);
-  const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
-  const ON_SITE = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'];
-  let list = vehicles.filter(v => {
-    if (currentCat === 'All') return true;
-    if (currentCat === 'Stock') return ON_SITE.includes(v.category || 'Stock');
-    return v.category === currentCat;
-  });
-  if (q) {
-    list = list.filter(v =>
-      (v.registration||'').toLowerCase().includes(q) ||
-      (v.make||'').toLowerCase().includes(q) ||
-      (v.model||'').toLowerCase().includes(q) ||
-      (v.derivative||'').toLowerCase().includes(q) ||
-      (v.colour||'').toLowerCase().includes(q)
-    );
-  }
-  if (fuel) list = list.filter(v => (v.fuel || '').toLowerCase().includes(fuel.toLowerCase()));
-  if (!isNaN(minP)) list = list.filter(v => v.retail_price != null && Number(v.retail_price) >= minP);
-  if (!isNaN(maxP)) list = list.filter(v => v.retail_price != null && Number(v.retail_price) <= maxP);
-  if (sortBy === 'price-asc') list = list.slice().sort((a,b) => (a.retail_price??1e12) - (b.retail_price??1e12));
-  else if (sortBy === 'price-desc') list = list.slice().sort((a,b) => (b.retail_price??0) - (a.retail_price??0));
-  else if (sortBy === 'mileage') list = list.slice().sort((a,b) => (a.mileage||0) - (b.mileage||0));
-  else if (sortBy === 'year') list = list.slice().sort((a,b) => (b.model_year||0) - (a.model_year||0));
-  else {
-    // default brand → model → price
-    list = list.slice().sort((a, b) => {
-      const mk = (a.make||'').localeCompare(b.make||'', undefined, {sensitivity:'base'});
-      if (mk) return mk;
-      const am = (a.model||''), bm = (b.model||'');
-      const an = am.match(/\d+/), bn = bm.match(/\d+/);
-      if (an && bn) { const d = parseInt(an[0],10) - parseInt(bn[0],10); if (d) return d; }
-      const ms = am.localeCompare(bm, undefined, {sensitivity:'base'});
-      if (ms) return ms;
-      return (a.retail_price??1e12) - (b.retail_price??1e12);
-    });
-  }
-  return list;
+
+let listView = localStorage.getItem('dsb_list_view') === '1';
+
+function updateListToggleBtn() {
+  const btn = document.getElementById('toggleListBtn');
+  if (!btn) return;
+  btn.textContent = listView ? 'On' : 'Off';
+  btn.classList.toggle('off', !listView);
+  btn.setAttribute('aria-pressed', listView ? 'true' : 'false');
+  document.body.classList.toggle('list-view-mode', listView);
 }
 
-function printStockList() {
-  const list = getFilteredList();
-  const title = (document.getElementById('pageTitle') || {}).textContent || currentCat || 'Stock';
-  const now = new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-  const totalVal = list.reduce((s, v) => s + (Number(v.retail_price) || 0), 0);
-  const fmt = n => n == null || n === '' ? '—' : '£' + Number(n).toLocaleString('en-GB');
-  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function toggleListView() {
+  listView = !listView;
+  localStorage.setItem('dsb_list_view', listView ? '1' : '0');
+  updateListToggleBtn();
+  renderList();
+}
 
+function listTableHtml(list) {
+  const fmt = n => (n == null || n === '') ? '—' : '£' + Number(n).toLocaleString('en-GB');
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   let rows = '';
   let lastMake = '';
-  list.forEach((v, i) => {
+  list.forEach(v => {
     const make = (v.make || '').toUpperCase();
     if (make !== lastMake) {
-      rows += `<tr class="brand-row"><td colspan="7">${esc(make)}</td></tr>`;
+      rows += '<tr class="list-brand"><td colspan="5">' + esc(make) + '</td></tr>';
       lastMake = make;
     }
-    rows += `<tr>
-      <td class="num">${i + 1}</td>
-      <td class="reg">${esc(v.registration || '')}</td>
-      <td>${esc(v.model || '')}</td>
-      <td class="spec">${esc((v.derivative || '').slice(0, 48))}</td>
-      <td>${esc(v.model_year || '')}</td>
-      <td class="right">${(v.mileage != null ? Number(v.mileage).toLocaleString('en-GB') : '—')}</td>
-      <td class="right price">${fmt(v.retail_price)}</td>
-    </tr>`;
+    const model = cleanModelDisplay(v.make, v.model);
+    const name = esc([model, v.derivative].filter(Boolean).join(' · ').slice(0, 100));
+    const id = esc(v.id || v.registration || '');
+    rows += '<tr class="list-row" onclick="openDetail(\'' + id + '\')">'
+      + '<td class="list-reg">' + esc(v.registration || '') + '</td>'
+      + '<td class="list-name">' + name + '</td>'
+      + '<td class="list-year">' + esc(v.model_year || '') + '</td>'
+      + '<td class="list-miles">' + (v.mileage != null ? Number(v.mileage).toLocaleString('en-GB') : '—') + '</td>'
+      + '<td class="list-price">' + fmt(v.retail_price) + '</td>'
+      + '</tr>';
   });
-
-  const htmlDoc = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${esc(title)} — Print list</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #111; margin: 12mm; font-size: 11px; }
-  h1 { font-size: 16px; margin: 0 0 4px; }
-  .meta { color: #444; margin-bottom: 12px; font-size: 11px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; border-bottom: 2px solid #111; padding: 4px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
-  td { padding: 3px 6px; border-bottom: 1px solid #ddd; vertical-align: top; }
-  tr.brand-row td { background: #eef2f7; font-weight: 700; letter-spacing: 0.04em; padding-top: 8px; border-bottom: 1px solid #94a3b8; }
-  .num { width: 28px; color: #666; }
-  .reg { font-weight: 700; white-space: nowrap; letter-spacing: 0.04em; }
-  .spec { color: #444; max-width: 280px; }
-  .right { text-align: right; white-space: nowrap; }
-  .price { font-weight: 600; }
-  .footer { margin-top: 12px; font-size: 10px; color: #555; display: flex; justify-content: space-between; }
-  @media print {
-    body { margin: 8mm; }
-    tr.brand-row { break-after: avoid; }
-    tr { break-inside: avoid; }
-  }
-</style>
-</head>
-<body>
-  <h1>Dealer Stock Burton — ${esc(title)}</h1>
-  <div class="meta">${list.length} vehicles · Printed ${esc(now)}</div>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>Reg</th><th>Model</th><th>Spec</th><th>Year</th><th class="right">Miles</th><th class="right">Price</th>
-      </tr>
-    </thead>
-    <tbody>${rows || '<tr><td colspan="7">No vehicles in this view</td></tr>'}</tbody>
-  </table>
-  <div class="footer">
-    <span>Burton-upon-Trent stock list</span>
-    <span>Total list value: ${fmt(totalVal)}</span>
-  </div>
-  <script>
-    window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 300); };
-  </script>
-</body>
-</html>`;
-
-  const w = window.open('', '_blank', 'noopener,noreferrer');
-  if (!w) {
-    alert('Please allow pop-ups to print the list.');
-    return;
-  }
-  w.document.open();
-  w.document.write(htmlDoc);
-  w.document.close();
+  if (!list.length) return '<div class="empty">No vehicles found.</div>';
+  return '<div class="list-view-wrap">'
+    + '<div class="list-view-toolbar no-print">'
+    + '<span>' + list.length + ' vehicles</span>'
+    + '<button type="button" class="btn btn-secondary" onclick="window.print()">🖨 Print this list</button>'
+    + '<button type="button" class="btn btn-secondary" onclick="toggleListView()">← Cards view</button>'
+    + '</div>'
+    + '<table class="stock-list-table">'
+    + '<thead><tr><th>Reg</th><th>Vehicle</th><th>Year</th><th>Mileage</th><th>Price</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody></table></div>';
 }
-
 
 function renderList() {
   const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
@@ -957,6 +914,10 @@ function renderList() {
   const area = document.getElementById('listArea');
   if (!list.length) {
     area.innerHTML = '<div class="empty">No vehicles found.</div>';
+    return;
+  }
+  if (listView) {
+    area.innerHTML = listTableHtml(list);
     return;
   }
   if (sortBy !== 'default') {

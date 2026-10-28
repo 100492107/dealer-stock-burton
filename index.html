@@ -386,6 +386,7 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   </button>
   <div class="nav-links" id="navLinks">
     <button data-cat="Stock" class="active">Stock</button>
+    <button data-cat="New">New</button>
     <button data-cat="Demonstrators">Demonstrators</button>
     <button data-cat="Pre-reg">Pre-reg</button>
     <button data-cat="Commercials">Commercials</button>
@@ -891,7 +892,7 @@ function renderList() {
   const minP = parseFloat((document.getElementById('filterMinPrice') || {}).value);
   const maxP = parseFloat((document.getElementById('filterMaxPrice') || {}).value);
   const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
-  const ON_SITE = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon'];
+  const ON_SITE = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'];
   let list = vehicles.filter(v => {
     if (currentCat === 'All') return true;
     if (currentCat === 'Stock') return ON_SITE.includes(v.category || 'Stock');

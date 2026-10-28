@@ -1094,10 +1094,26 @@ function toggleImages() {
 function featureChips(v, limit) {
   const feats = Array.isArray(v.key_features) ? v.key_features : [];
   if (!feats.length) return '';
-  const show = feats.slice(0, limit || 5);
-  const more = feats.length - show.length;
-  return `<div class="feature-chips">${show.map(f => `<span class="feat">${f}</span>`).join('')}${more > 0 ? `<span class="feat more">+${more}</span>` : ''}</div>`;
+  const lim = limit == null ? 4 : limit;
+  const chips = feats.map((f, i) => {
+    const safe = String(f).replace(/</g, '&lt;');
+    const hide = lim >= 0 && i >= lim ? ' feat-collapsed' : '';
+    return `<span class="feat${hide}">${safe}</span>`;
+  }).join('');
+  const more = lim >= 0 && feats.length > lim
+    ? `<button type="button" class="feat-more" onclick="toggleFeatMore(event, this)">See more (${feats.length - lim})</button>`
+    : '';
+  return `<div class="feature-chips">${chips}${more}</div>`;
 }
+function toggleFeatMore(e, btn) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const wrap = btn.closest('.feature-chips');
+  if (!wrap) return;
+  const open = wrap.classList.toggle('is-expanded');
+  const n = wrap.querySelectorAll('.feat-collapsed').length;
+  btn.textContent = open ? 'See less' : `See more (${n})`;
+}
+
 
 function cardHtml(v) {
   const flags = (v.status_flags || []).map(f => `<span class="flag${f === 'Reserved' ? ' flag-reserved' : ''}">${f}</span>`).join('');
@@ -1284,7 +1300,7 @@ function openDetail(id) {
     </div>`;
 
   const features = (v.key_features && v.key_features.length)
-    ? `<div class="vd-section"><h3 class="vd-section-title">Key features</h3>${featureChips(v, 12)}</div>`
+    ? `<div class="vd-section"><h3 class="vd-section-title">Key features</h3>${featureChips(v, 6)}</div>`
     : '';
 
   const svc = (v.service_history || '').trim();

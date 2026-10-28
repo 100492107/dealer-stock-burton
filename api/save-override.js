@@ -68,6 +68,7 @@ module.exports = async function handler(req, res) {
   if (body.special_offer !== undefined) next.special_offer = body.special_offer;
   if (body.category !== undefined) next.category = body.category;
   if (body.peg_number !== undefined) next.peg_number = body.peg_number;
+  if (body.dealer_peg !== undefined) next.dealer_peg = body.dealer_peg;
   if (body.notes !== undefined) next.notes = body.notes;
   if (body.add_note) {
     const notes = Array.isArray(next.notes) ? next.notes.slice() : [];

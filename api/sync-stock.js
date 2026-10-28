@@ -1,6 +1,6 @@
 /**
  * POST/GET /api/sync-stock — Pentagon Burton stock + live prices; Sold when gone
- * Vercel Cron safe: parallel fetches, timeouts, retries, 409 SHA retry.
+ * Vercel Cron safe: parallel fetches, timeouts, retries, feature scrape.
  * Requires GITHUB_TOKEN (repo contents:write)
  */
 const OWNER = '100492107';
@@ -46,6 +46,101 @@ function tidyTitle(title) {
   [[/\bPuretech\b/gi,'PureTech'],[/\bTfsi\b/g,'TFSI'],[/\bTdi\b/g,'TDI'],[/\bHdi\b/gi,'HDi'],[/\bCrdi\b/gi,'CRDi'],[/\bMhev\b/gi,'MHEV'],[/\bDm I\b/gi,'DM-i'],[/\bEat6\b/gi,'EAT6'],[/\bEat8\b/gi,'EAT8'],[/\bCvt\b/g,'CVT'],[/\bAwd\b/g,'AWD'],[/(\d)\s*kwh\b/gi,'$1 kWh'],[/\bPs\b/g,'PS'],[/\bBhp\b/g,'BHP']].forEach(([p,r]) => { s = s.replace(p,r); });
   return s;
 }
+
+const DESIRABLE_RE = [
+  /heated\s*seat/i, /heated\s*steering/i, /heated\s*wheel/i, /heated\s*windscreen/i,
+  /ambient\s*light/i, /panoramic/i, /\bpan\s*roof/i, /sunroof/i, /glass\s*roof/i, /sky\s*view/i,
+  /leather/i, /nappa/i, /alcantara/i, /sport\s*seat/i, /massage\s*seat/i, /ventilated\s*seat/i,
+  /memory\s*seat/i, /electric\s*seat/i, /power\s*seat/i,
+  /matrix\s*led/i, /adaptive\s*led/i, /full\s*led/i, /\bled\s*head/i, /xenon/i,
+  /adaptive\s*cruise/i, /cruise\s*control/i, /traffic\s*sign/i,
+  /blind\s*spot/i, /cross\s*traffic/i, /lane\s*(?:keep|assist|depart)/i, /autonomous/i,
+  /parking\s*camera/i, /revers(?:e|ing)\s*camera/i, /360|surround\s*camera|bird.?eye/i,
+  /park\s*assist/i, /parking\s*sensor/i, /self.?park/i,
+  /keyless/i, /hands.?free\s*(?:tailgate|boot)/i, /power\s*tailgate/i, /electric\s*(?:tailgate|boot)/i,
+  /wireless\s*charg/i, /apple\s*carplay/i, /android\s*auto/i, /carplay/i,
+  /sat\s*nav|navigation|nav\s*system/i, /heads?\s*up|\bHUD\b/i,
+  /digital\s*cockpit|virtual\s*cockpit|digital\s*cluster/i,
+  /bose|bang\s*&\s*olufsen|harman|premium\s*sound|bang and/i,
+  /climate\s*control|dual[\s-]*zone|tri[\s-]*zone|four[\s-]*zone|multi[\s-]*zone/i,
+  /adaptive\s*suspension|air\s*suspension|dynamic\s*chassis/i,
+  /tow\s*bar|towbar/i, /soft\s*close/i, /gesture/i,
+  /smartphone\s*interface/i, /dab\s*radio/i,
+];
+const SKIP_FEATURE_RE = /^(isofix|tyre pressure|abs|esp|airbag|immobiliser|remote central locking|electric windows|power steering)$/i;
+
+function isDesirableFeature(name) {
+  const n = (name || '').trim();
+  if (!n || n.length < 3 || n.length > 60) return false;
+  if (SKIP_FEATURE_RE.test(n)) return false;
+  return DESIRABLE_RE.some(re => re.test(n));
+}
+
+function extractFeaturesFromDetail(html) {
+  const found = [];
+  const seen = new Set();
+  const labelRe = /<label[^>]*class="[^"]*bold[^"]*"[^>]*>([^<]{3,60})<\/label>/gi;
+  let m;
+  while ((m = labelRe.exec(html))) {
+    const name = m[1].replace(/\s+/g, ' ').trim();
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    if (isDesirableFeature(name)) { seen.add(key); found.push(name); }
+  }
+  const titleRe = /<i[^>]*title="([^"]{3,60})"[^>]*>/gi;
+  while ((m = titleRe.exec(html))) {
+    const name = m[1].replace(/\s+/g, ' ').trim();
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    if (isDesirableFeature(name)) { seen.add(key); found.push(name); }
+  }
+  return found.slice(0, 8);
+}
+
+async function fetchKeyFeatures(detailUrl) {
+  if (!detailUrl) return [];
+  try {
+    const html = await fetchWithRetry(detailUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DealerStockBurton/1.0)' },
+    }, 0);
+    return extractFeaturesFromDetail(html);
+  } catch (_) {
+    return [];
+  }
+}
+
+async function enrichFeatures(liveList, prevByReg, timeBudgetMs) {
+  const start = Date.now();
+  const need = liveList.filter(v => {
+    const prev = prevByReg[v.registration];
+    if (prev && Array.isArray(prev.key_features) && prev.key_features.length) {
+      v.key_features = prev.key_features;
+      return false;
+    }
+    return !!v.detail_url;
+  });
+  const concurrency = 6;
+  let i = 0;
+  async function worker() {
+    while (i < need.length) {
+      if (Date.now() - start > timeBudgetMs) break;
+      const idx = i++;
+      const v = need[idx];
+      const feats = await fetchKeyFeatures(v.detail_url);
+      if (feats.length) v.key_features = feats;
+      else if (!v.key_features) v.key_features = [];
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  for (const v of liveList) {
+    if (!v.key_features || !v.key_features.length) {
+      const prev = prevByReg[v.registration];
+      if (prev && prev.key_features) v.key_features = prev.key_features;
+    }
+  }
+  return liveList;
+}
+
 function cleanModel(make, model) {
   let m = (model || '').trim();
   const mk = (make || '').trim();
@@ -126,7 +221,7 @@ function parseBlocks(html, defaultCategory) {
     if (/\b(Automatic|CVT|S tronic|EAT|DSG|Auto)\b/i.test(text)) trans = 'Automatic';
     else if (/\bManual\b/i.test(text)) trans = 'Manual';
     const flags = /photos available soon/i.test(text) ? ['Awaiting Prep'] : [];
-    vehicles.push({ id: reg, registration: reg, make, model, derivative, mileage: miles, transmission: trans, fuel, model_year: year, colour, category: defaultCategory, retail_price: price, bring_into_stock_date: new Date().toISOString().slice(0, 10), service_history: '', service_history_notes: '', status_flags: flags, notes: [], special_offer: '', image_url, detail_url: href ? 'https://www.pentagon-group.co.uk' + href : '', peg_number: vid, source: 'pentagon-burton' });
+    vehicles.push({ id: reg, registration: reg, make, model, derivative, mileage: miles, transmission: trans, fuel, model_year: year, colour, category: defaultCategory, retail_price: price, bring_into_stock_date: new Date().toISOString().slice(0, 10), service_history: '', service_history_notes: '', status_flags: flags, notes: [], special_offer: '', image_url, detail_url: href ? 'https://www.pentagon-group.co.uk' + href : '', peg_number: vid, source: 'pentagon-burton', key_features: [] });
   }
   return vehicles;
 }
@@ -240,6 +335,7 @@ function applyManual(vehicle, prev, overrides, isLive) {
   for (const key of MANUAL) { if (o[key] != null) vehicle[key] = o[key]; else if (prev[key]) vehicle[key] = prev[key]; }
   if (prev.bring_into_stock_date) vehicle.bring_into_stock_date = prev.bring_into_stock_date;
   if ((!vehicle.status_flags || !vehicle.status_flags.length) && prev.status_flags) vehicle.status_flags = prev.status_flags;
+  if (prev.key_features && (!vehicle.key_features || !vehicle.key_features.length)) vehicle.key_features = prev.key_features;
   if (isLive) {
     delete vehicle.sold_date;
     const manual = o.category || (['Demonstrators','Pre-reg','Commercials','Arriving Soon'].includes(prev.category) ? prev.category : null);
@@ -266,8 +362,7 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ ok: false, error: 'GITHUB_TOKEN not set on Vercel' });
     }
 
-    const { list: live, scrapeErrors } = await fetchLive();
-    const liveByReg = Object.fromEntries(live.map(v => [v.registration, v]));
+    const { list: liveRaw, scrapeErrors } = await fetchLive();
 
     const [vehFile, ovFile, soldFile] = await Promise.all([
       readJsonFile('vehicles.json'),
@@ -279,6 +374,9 @@ module.exports = async function handler(req, res) {
     const archivedSold = Array.isArray(soldFile.data) ? soldFile.data : [];
 
     const prevByReg = Object.fromEntries(previous.filter(v => v.registration).map(v => [v.registration, v]));
+
+    const live = await enrichFeatures(liveRaw, prevByReg, 35000);
+    const liveByReg = Object.fromEntries(live.map(v => [v.registration, v]));
     const liveRegs = new Set(Object.keys(liveByReg));
     const today = new Date().toISOString().slice(0, 10);
     const result = [];
@@ -350,6 +448,7 @@ module.exports = async function handler(req, res) {
       newlySold: soldCount,
       returned: returnedCount,
       priced,
+      withFeatures: result.filter(v => v.key_features && v.key_features.length).length,
       total: result.length,
       scrapeErrors: scrapeErrors.length ? scrapeErrors : undefined,
       ms: Date.now() - started,

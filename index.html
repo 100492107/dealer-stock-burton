@@ -372,6 +372,8 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; line-height: 1.2;
 }
 .feat.more { background: var(--bg-soft); color: var(--muted); border-color: var(--border); }
+
+.flag-reserved { background: #fef3c7 !important; color: #92400e !important; border: 1px solid #fcd34d; font-weight: 700; }
 </style>
 
 </head>
@@ -808,7 +810,7 @@ function featureChips(v, limit) {
 }
 
 function cardHtml(v) {
-  const flags = (v.status_flags || []).map(f => `<span class="flag">${f}</span>`).join('');
+  const flags = (v.status_flags || []).map(f => `<span class="flag${f === 'Reserved' ? ' flag-reserved' : ''}">${f}</span>`).join('');
   let img = '';
   if (showImages) {
     img = v.image_url

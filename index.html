@@ -1635,26 +1635,23 @@ function openDetail(id) {
           ? `<div class="price-move"><span class="was">${fmtPrice(v.previous_price)}</span><span class="drop">↓ reduced</span></div>` : ''}
         ${v.special_offer ? `<div class="vd-offer">${String(v.special_offer).replace(/</g,'&lt;')}</div>` : ''}
         ${metrics}
-        <div class="vd-section no-print">
+        <div class="vd-section no-print vd-sales-desk">
           <h3 class="vd-section-title">Sales desk</h3>
+          ${(() => {
+            const cat = v.category || 'Stock';
+            const res = (v.status_flags || []).includes('Reserved') || !!(v.reserved_by || '').trim();
+            let cur = 'available';
+            if (cat === 'Sold') cur = 'sold';
+            else if (cat === 'Delivered') cur = 'delivered';
+            else if (res) cur = 'reserved';
+            const labels = {available:'Available',reserved:'Reserved',sold:'Sold',delivered:'Delivered'};
+            const btns = ['available','reserved','sold','delivered'].map(s =>
+              `<button type="button" class="status-pill status-${s}${cur===s?' is-active':''}" onclick="event.preventDefault();setVehicleStatus('${s}')">${labels[s]}</button>`
+            ).join('');
+            return `<div class="status-pills" role="group" aria-label="Vehicle status">${btns}</div>
+            <input type="hidden" id="detailStatus" value="${cur}">`;
+          })()}
           <div class="vd-ops">
-            <div class="vd-ops-row">
-              <label>Status</label>
-              <select id="detailStatus" onchange="onDetailStatusChange()">
-                ${(() => {
-                  const cat = v.category || 'Stock';
-                  const res = (v.status_flags || []).includes('Reserved') || !!(v.reserved_by || '').trim();
-                  let cur = 'available';
-                  if (cat === 'Sold') cur = 'sold';
-                  else if (cat === 'Delivered') cur = 'delivered';
-                  else if (res) cur = 'reserved';
-                  return ['available','reserved','sold','delivered'].map(s => {
-                    const labels = {available:'Available',reserved:'Reserved',sold:'Sold',delivered:'Delivered'};
-                    return `<option value="${s}"${cur===s?' selected':''}>${labels[s]}</option>`;
-                  }).join('');
-                })()}
-              </select>
-            </div>
             <div class="vd-ops-row" id="rowReservedBy" style="${((v.status_flags||[]).includes('Reserved')||(v.reserved_by||'').trim()) && !['Sold','Delivered'].includes(v.category||'') ? '' : 'display:none'}">
               <label>Who's on it</label>
               <input type="text" id="detailReservedBy" value="${String(v.reserved_by||'').replace(/"/g,'&quot;')}" placeholder="Salesperson name">
@@ -1684,8 +1681,6 @@ function openDetail(id) {
             </div>
             <div class="vd-ops-actions">
               <button type="button" class="btn btn-primary" onclick="saveSalesDesk()">Save status</button>
-              <button type="button" class="btn btn-secondary" onclick="quickStatus('available')">Clear reserved</button>
-              <button type="button" class="btn btn-secondary" onclick="quickStatus('sold')">Mark sold</button>
             </div>
           </div>
         </div>
@@ -2004,6 +1999,29 @@ function applyDeskStatus(v, status, opts) {
     v.status_flags = (v.status_flags || []).filter(f => f !== 'Reserved');
     delete v.sold_date;
   }
+}
+
+async function setVehicleStatus(status) {
+  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
+  if (!v) return;
+  const hid = document.getElementById('detailStatus');
+  if (hid) hid.value = status;
+  // Update pill UI immediately
+  document.querySelectorAll('.status-pill').forEach(btn => {
+    btn.classList.toggle('is-active', btn.classList.contains('status-' + status));
+  });
+  const rowR = document.getElementById('rowReservedBy');
+  const rowS = document.getElementById('rowSoldBy');
+  if (rowR) rowR.style.display = status === 'reserved' ? '' : 'none';
+  if (rowS) rowS.style.display = (status === 'sold' || status === 'delivered') ? '' : 'none';
+  const cat = document.getElementById('detailCategory');
+  if (cat) {
+    if (status === 'sold') cat.value = 'Sold';
+    else if (status === 'delivered') cat.value = 'Delivered';
+    else if (['Sold','Delivered'].includes(cat.value)) cat.value = 'Stock';
+  }
+  // Apply + save immediately so team sees it
+  await quickStatus(status);
 }
 
 async function quickStatus(status) {

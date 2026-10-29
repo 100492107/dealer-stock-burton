@@ -1277,8 +1277,67 @@ function toggleImages() {
   renderList();
 }
 
+
+function normalizeFeatureLabel(raw) {
+  let f = String(raw || '').trim();
+  if (!f) return '';
+  const low = f.toLowerCase();
+
+  // Leather — be precise; never say "Leather Seats" for part/leatherette
+  if (/leather|nappa|dakota|vernasca|sensatec|alcantara|leatherette|vinyl\s*seat/i.test(f)) {
+    if (/alcantara/i.test(f)) return 'Alcantara';
+    if (/nappa/i.test(f)) return 'Nappa Leather';
+    if (/dakota/i.test(f)) return 'Dakota Leather';
+    if (/vernasca/i.test(f)) return 'Vernasca Leather';
+    if (/sensatec/i.test(f) || /leatherette|synthetic\s*leather|artificial\s*leather|faux\s*leather|pu\s*leather/i.test(f)) {
+      return 'Leatherette';
+    }
+    if (/part[\s-]*leather|partial\s*leather|half[\s-]*leather|leather\s*bolster|leather\s*\/\s*cloth|cloth\s*\/\s*leather|leather\s*inserts?|mixed\s*leather/i.test(f)) {
+      return 'Part Leather';
+    }
+    if (/full[\s-]*leather/i.test(f)) return 'Full Leather';
+    if (/leather\s*upholstery|leather\s*interior/i.test(f) && !/part|partial|half/i.test(f)) return 'Full Leather';
+    // Generic "leather" / "leather seats" — don't claim full vs part if website didn't say
+    if (/leather\s*seats?|\bleather\b/i.test(f)) return 'Leather';
+
+  }
+
+  if (/heated\s*(front\s*)?seats?/i.test(f)) return 'Heated Seats';
+  if (/ventilated|cooled\s*seats?/i.test(f)) return 'Ventilated Seats';
+  if (/massage\s*seats?/i.test(f)) return 'Massage Seats';
+  if (/apple\s*carplay|carplay/i.test(f)) return 'Apple CarPlay';
+  if (/android\s*auto/i.test(f)) return 'Android Auto';
+  if (/wireless\s*charg/i.test(f)) return 'Wireless Charging';
+  if (/panoramic|glass\s*roof/i.test(f)) return 'Panoramic Roof';
+  if (/sun\s*roof|sunroof/i.test(f) && !/panoramic/i.test(f)) return 'Sunroof';
+  return f;
+}
+
+function normalizeFeaturesList(list) {
+  const seen = new Set();
+  const out = [];
+  // Prefer more specific leather labels if both appear
+  const rank = { 'Nappa Leather': 0, 'Dakota Leather': 0, 'Vernasca Leather': 0, 'Full Leather': 1, 'Part Leather': 1, 'Alcantara': 1, 'Leather': 3, 'Leatherette': 4 };
+  const leatherish = [];
+  for (const raw of list || []) {
+    const n = normalizeFeatureLabel(raw);
+    if (!n) continue;
+    if (rank[n] != null) { leatherish.push(n); continue; }
+    const k = n.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(n);
+  }
+  if (leatherish.length) {
+    leatherish.sort((a, b) => (rank[a] ?? 9) - (rank[b] ?? 9));
+    const best = leatherish[0];
+    out.unshift(best);
+  }
+  return out;
+}
+
 function featureChips(v, limit) {
-  const feats = Array.isArray(v.key_features) ? v.key_features.filter(Boolean) : [];
+  const feats = normalizeFeaturesList(Array.isArray(v.key_features) ? v.key_features : []);
   if (!feats.length) return '';
   const lim = (limit == null || limit < 0) ? feats.length : Math.min(limit, feats.length);
   const showAll = limit == null || limit < 0 || limit >= feats.length;

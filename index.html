@@ -689,6 +689,61 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   color: var(--primary); background: #e8eef6; border: 1px solid #c5d4e8;
   padding: 0.12rem 0.4rem; border-radius: 5px; white-space: nowrap;
 }
+
+.dash-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+.dash-item {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.75rem 0.85rem; text-align: center;
+  box-shadow: var(--shadow);
+}
+.dash-n { display: block; font-size: 1.45rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+.dash-l { display: block; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.2rem; }
+.dash-reserved .dash-n { color: #b45309; }
+.dash-age .dash-n { color: #b91c1c; }
+@media (max-width: 640px) {
+  .dash-strip { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .dash-n { font-size: 1.25rem; }
+}
+.card-days {
+  font-size: 0.7rem; font-weight: 700; color: var(--muted);
+  background: var(--bg-soft); border: 1px solid var(--border);
+  padding: 0.12rem 0.4rem; border-radius: 4px;
+}
+.card-days.hot { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+.card-price-was {
+  font-size: 0.72rem; color: var(--muted); text-decoration: line-through; font-weight: 500;
+  margin-right: 0.35rem;
+}
+.card-price-row { display: flex; align-items: baseline; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end; }
+.card-reserved-by {
+  font-size: 0.72rem; font-weight: 600; color: #92400e;
+  background: #fef3c7; border: 1px solid #fcd34d;
+  padding: 0.2rem 0.45rem; border-radius: 6px; margin-top: 0.35rem;
+}
+.card-prep {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 0.15rem 0.4rem; border-radius: 4px; margin-top: 0.3rem; display: inline-block;
+  background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;
+}
+.card-prep.prep-Ready { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.card-prep.prep-Prep { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.card-prep.prep-Photos { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+.card-prep.prep-Display { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+.card-sold-by { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+.vd-ops { display: grid; gap: 0.75rem; }
+.vd-ops-row { display: flex; flex-direction: column; gap: 0.3rem; }
+.vd-ops-row label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.vd-ops-row input, .vd-ops-row select {
+  padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 7px;
+  font-size: 0.9rem; font-family: inherit; background: #fff;
+}
+.vd-ops-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.price-move { font-size: 0.85rem; margin-top: 0.15rem; }
+.price-move .was { text-decoration: line-through; color: var(--muted); margin-right: 0.35rem; }
+.price-move .drop { color: #b91c1c; font-weight: 700; }
 </style>
 
 </head>
@@ -741,7 +796,15 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
       <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…" onkeydown="if(event.key==='Enter'){renderList()}">
       <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
       <button type="button" class="btn-clear-search" id="clearSearchBtn" onclick="goHome()" style="display:none">✕ All stock</button>
+      <button type="button" class="btn btn-secondary" onclick="exportCsv()" title="Export visible stock to CSV">Export CSV</button>
     </div>
+  </div>
+
+  <div class="dash-strip" id="dashStrip" aria-label="Stock summary">
+    <div class="dash-item"><span class="dash-n" id="dashInStock">0</span><span class="dash-l">In stock</span></div>
+    <div class="dash-item dash-reserved"><span class="dash-n" id="dashReserved">0</span><span class="dash-l">Reserved</span></div>
+    <div class="dash-item"><span class="dash-n" id="dashSold7">0</span><span class="dash-l">Sold (7 days)</span></div>
+    <div class="dash-item dash-age"><span class="dash-n" id="dashOver60">0</span><span class="dash-l">Over 60 days</span></div>
   </div>
   
   <div class="filters-bar" id="filtersBar">
@@ -1047,7 +1110,53 @@ function setSyncStatus(text, cls) {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
-/* daysInStock removed */
+
+function daysInStock(v) {
+  const raw = v.bring_into_stock_date || v.date_in_stock || '';
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return null;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.max(0, Math.round((today - d) / 86400000));
+}
+function daysBadge(v) {
+  const n = daysInStock(v);
+  if (n == null) return '';
+  const hot = n >= 60 ? ' hot' : '';
+  return `<span class="card-days${hot}">${n}d</span>`;
+}
+function priceBlock(v) {
+  const cur = v.retail_price;
+  const prev = v.previous_price;
+  let was = '';
+  if (prev != null && cur != null && Number(prev) > Number(cur)) {
+    was = `<span class="card-price-was">${fmtPrice(prev)}</span>`;
+  }
+  return `<div class="card-price-row">${was}<span class="price">${fmtPrice(cur)}</span></div>`;
+}
+function reservedByHtml(v) {
+  const flags = v.status_flags || [];
+  const isRes = flags.includes('Reserved') || v.is_reserved;
+  if (!isRes && !(v.reserved_by || '').trim()) return '';
+  const who = (v.reserved_by || '').trim();
+  if (!who) return `<div class="card-reserved-by">Reserved</div>`;
+  const when = v.reserved_at ? ` · ${v.reserved_at}` : '';
+  return `<div class="card-reserved-by">On it: ${who.replace(/</g,'&lt;')}${when.replace(/</g,'&lt;')}</div>`;
+}
+function prepBadge(v) {
+  const p = (v.prep_status || '').trim();
+  if (!p) return '';
+  return `<span class="card-prep prep-${p.replace(/[^a-zA-Z]/g,'')}">${p}</span>`;
+}
+function soldByHtml(v) {
+  if ((v.category || '') !== 'Sold' && (v.category || '') !== 'Delivered') return '';
+  const who = (v.sold_by || '').trim();
+  if (!who) return '';
+  return `<div class="card-sold-by">Sold by ${who.replace(/</g,'&lt;')}</div>`;
+}
+
 
 function save() {
   localStorage.setItem('dealerStock', JSON.stringify(vehicles));
@@ -1157,11 +1266,11 @@ async function savePegNumber() {
   const input = document.getElementById('detailPeg');
   if (!input) return;
   const peg = (input.value || '').trim();
-  v.peg_number = peg;
+  v.dealer_peg = peg;
   try { save(); } catch (_) {}
   const btn = document.querySelector('.btn-peg-save');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
-  const r = await sharedSave({ registration: v.registration, peg_number: peg });
+  const r = await sharedSave({ registration: v.registration, dealer_peg: peg });
   if (btn) { btn.disabled = false; btn.textContent = r.ok ? 'Saved' : 'Save'; }
   if (!r.ok) alert('PEG saved on this device only — shared save failed: ' + (r.error || ''));
   else setTimeout(() => { if (btn) btn.textContent = 'Save'; }, 1500);
@@ -1188,24 +1297,28 @@ function toggleFeatPanel(e) {
 }
 
 function cardHtml(v) {
-  const flags = (v.status_flags || []).map(f => `<span class="flag${f === 'Reserved' ? ' flag-reserved' : ''}">${f}</span>`).join('');
+  const flags = (v.status_flags || []).filter(f => f !== 'Reserved').map(f => `<span class="flag">${f}</span>`).join('');
   let img = '';
   if (showImages) {
     img = v.image_url
       ? `<img class="card-img" src="${v.image_url}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-img-placeholder',textContent:'No photo'}))">`
       : `<div class="card-img-placeholder">No photo</div>`;
   }
-  return `<div class="vehicle-card${showImages ? '' : ' no-img'}" onclick="openDetail('${v.id}')">
+  const peg = (v.dealer_peg || '').trim();
+  return `<div class="vehicle-card${showImages ? '' : ' no-img'}" onclick="openDetail('${(v.id || v.registration || '').replace(/'/g,"\\'")}')">
     ${img}
     <div class="card-body">
-      <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span><span class="price">${fmtPrice(v.retail_price)}</span></div>
+      <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span>${priceBlock(v)}</div>
       <div class="spec">${formatSpec(v.derivative || '')}</div>
-      <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
+      <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi · ${daysBadge(v)}</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
       <div class="reg">${v.registration || ''}</div>
       <div class="card-colour-peg">
         <span class="colour">${v.colour || ''}</span>
-        ${v.dealer_peg ? `<span class="card-peg">PEG ${String(v.dealer_peg).replace(/</g,'&lt;')}</span>` : ''}
+        ${peg ? `<span class="card-peg">PEG ${peg.replace(/</g,'&lt;')}</span>` : ''}
       </div>
+      ${reservedByHtml(v)}
+      ${prepBadge(v)}
+      ${soldByHtml(v)}
       ${featureChips(v, 3)}
       ${catBadge(v)}${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
     </div>
@@ -1409,8 +1522,37 @@ function openDetail(id) {
           <div class="vd-price">${fmtPrice(v.retail_price)}</div>
           ${statusPills(v)}
         </div>
+        ${(v.previous_price != null && v.retail_price != null && Number(v.previous_price) > Number(v.retail_price))
+          ? `<div class="price-move"><span class="was">${fmtPrice(v.previous_price)}</span><span class="drop">↓ reduced</span></div>` : ''}
         ${v.special_offer ? `<div class="vd-offer">${String(v.special_offer).replace(/</g,'&lt;')}</div>` : ''}
         ${metrics}
+        <div class="vd-section no-print">
+          <h3 class="vd-section-title">Sales desk</h3>
+          <div class="vd-ops">
+            <div class="vd-ops-row">
+              <label>Days in stock</label>
+              <div style="font-weight:700">${(() => { const n = daysInStock(v); return n == null ? '—' : n + ' days'; })()}</div>
+            </div>
+            <div class="vd-ops-row">
+              <label>Prep status</label>
+              <select id="detailPrep">
+                <option value="">—</option>
+                ${['Ready','Prep','Photos','Display'].map(p => `<option value="${p}"${(v.prep_status||'')===p?' selected':''}>${p}</option>`).join('')}
+              </select>
+            </div>
+            <div class="vd-ops-row">
+              <label>Reserved — who's on it</label>
+              <input type="text" id="detailReservedBy" value="${String(v.reserved_by||'').replace(/"/g,'&quot;')}" placeholder="Name of salesperson">
+            </div>
+            <div class="vd-ops-row">
+              <label>Sold by</label>
+              <input type="text" id="detailSoldBy" value="${String(v.sold_by||'').replace(/"/g,'&quot;')}" placeholder="Who sold it">
+            </div>
+            <div class="vd-ops-actions">
+              <button type="button" class="btn btn-primary" onclick="saveSalesDesk()">Save desk info</button>
+            </div>
+          </div>
+        </div>
         <div class="vd-actions-desktop no-print">
           <button type="button" class="btn btn-secondary" onclick="editCurrent()">Edit details</button>
           <button type="button" class="btn btn-primary" onclick="printStockCard()">Print / Pentagon</button>
@@ -1432,7 +1574,7 @@ function openDetail(id) {
             <div class="vd-peg-field">
               <dt>PEG number</dt>
               <dd class="vd-peg-dd">
-                <input type="text" id="detailPeg" class="vd-peg-input" value="${String(v.peg_number || '').replace(/"/g,'&quot;')}" placeholder="Enter PEG…" autocomplete="off">
+                <input type="text" id="detailPeg" class="vd-peg-input" value="${String(v.dealer_peg || '').replace(/"/g,'&quot;')}" placeholder="Enter PEG…" inputmode="numeric" autocomplete="off">
                 <button type="button" class="btn btn-secondary btn-peg-save" onclick="savePegNumber()">Save</button>
               </dd>
             </div>
@@ -1643,7 +1785,86 @@ document.querySelectorAll('.overlay').forEach(o => {
 });
 
 
-async function sharedSave(payload) {
+async 
+async function saveSalesDesk() {
+  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
+  if (!v) return;
+  const prep = (document.getElementById('detailPrep') || {}).value || '';
+  const reservedBy = (document.getElementById('detailReservedBy') || {}).value || '';
+  const soldBy = (document.getElementById('detailSoldBy') || {}).value || '';
+  v.prep_status = prep;
+  v.reserved_by = reservedBy.trim();
+  if (v.reserved_by) {
+    v.reserved_at = v.reserved_at || new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' });
+    v.status_flags = Array.from(new Set([...(v.status_flags || []).filter(f => f !== 'Reserved'), 'Reserved']));
+  } else {
+    v.reserved_at = '';
+    v.status_flags = (v.status_flags || []).filter(f => f !== 'Reserved');
+  }
+  v.sold_by = soldBy.trim();
+  try { save(); } catch (_) {}
+  const payload = {
+    registration: v.registration,
+    prep_status: v.prep_status,
+    reserved_by: v.reserved_by,
+    reserved_at: v.reserved_at || '',
+    sold_by: v.sold_by,
+    status_flags: v.status_flags,
+  };
+  const r = await sharedSave(payload);
+  if (!r.ok) alert('Saved on this device only — shared save failed: ' + (r.error || ''));
+  openDetail(currentId);
+  renderList();
+}
+
+function updateDashStrip() {
+  const onSite = vehicles.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(v.category || 'Stock'));
+  const reserved = onSite.filter(v => (v.status_flags || []).includes('Reserved') || (v.reserved_by || '').trim());
+  const weekAgo = Date.now() - 7 * 86400000;
+  const sold7 = vehicles.filter(v => {
+    if ((v.category || '') !== 'Sold' && (v.category || '') !== 'Delivered') return false;
+    if (!v.sold_date) return false;
+    const t = new Date(v.sold_date).getTime();
+    return !isNaN(t) && t >= weekAgo;
+  });
+  const over60 = onSite.filter(v => {
+    const n = daysInStock(v);
+    return n != null && n >= 60;
+  });
+  const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = String(n); };
+  set('dashInStock', onSite.length);
+  set('dashReserved', reserved.length);
+  set('dashSold7', sold7.length);
+  set('dashOver60', over60.length);
+}
+
+function exportCsv() {
+  const rows = vehicles.slice().sort((a,b) => (a.make||'').localeCompare(b.make||'') || (a.model||'').localeCompare(b.model||''));
+  const cols = ['registration','make','model','derivative','model_year','mileage','fuel','transmission','colour','retail_price','previous_price','dealer_peg','prep_status','reserved_by','reserved_at','sold_by','sold_date','category','service_history','bring_into_stock_date','days_in_stock'];
+  const esc = (x) => {
+    const s = x == null ? '' : String(x);
+    if (/[",\\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+  const lines = [cols.join(',')];
+  rows.forEach(v => {
+    const days = daysInStock(v);
+    const line = cols.map(c => {
+      if (c === 'days_in_stock') return esc(days);
+      return esc(v[c]);
+    }).join(',');
+    lines.push(line);
+  });
+  const blob = new Blob([lines.join('\\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dealer-stock-burton-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+function sharedSave(payload) {
   try {
     const res = await fetch('/api/save-override', {
       method: 'POST',
@@ -1739,8 +1960,23 @@ function applyOverridesToVehicles(overrides) {
     if (o.service_history_notes != null && o.service_history_notes !== v.service_history_notes) {
       v.service_history_notes = o.service_history_notes; changed = true;
     }
-    if (o.peg_number != null && String(o.peg_number) !== String(v.peg_number || '')) {
-      v.peg_number = o.peg_number; changed = true;
+    if (o.dealer_peg != null && String(o.dealer_peg) !== String(v.dealer_peg || '')) {
+      v.dealer_peg = o.dealer_peg; changed = true;
+    }
+    if (o.peg_number != null && !v.dealer_peg) {
+      v.dealer_peg = o.peg_number; changed = true;
+    }
+    if (o.prep_status != null && o.prep_status !== v.prep_status) {
+      v.prep_status = o.prep_status; changed = true;
+    }
+    if (o.reserved_by != null && o.reserved_by !== v.reserved_by) {
+      v.reserved_by = o.reserved_by; changed = true;
+    }
+    if (o.reserved_at != null && o.reserved_at !== v.reserved_at) {
+      v.reserved_at = o.reserved_at; changed = true;
+    }
+    if (o.sold_by != null && o.sold_by !== v.sold_by) {
+      v.sold_by = o.sold_by; changed = true;
     }
     if (o.status_flags != null && JSON.stringify(o.status_flags) !== JSON.stringify(v.status_flags || [])) {
       v.status_flags = o.status_flags; changed = true;

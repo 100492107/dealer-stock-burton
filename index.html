@@ -165,7 +165,7 @@ body {
 }
 .vehicle-card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  overflow: hidden; cursor: pointer; display: flex; flex-direction: column;
+  overflow: visible; cursor: pointer; display: flex; flex-direction: column;
   box-shadow: var(--shadow);
   transition: box-shadow .18s, transform .18s, border-color .18s;
 }
@@ -748,6 +748,40 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 .vd-ops-actions .btn { flex: 1; min-width: 7rem; }
 #detailStatus { font-weight: 700; }
 
+
+.feat-wrap { margin-top: 0.35rem; }
+.feat-wrap .feat-more-btn {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  margin-top: 0.4rem; padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: #f8fafc; color: var(--primary); font-weight: 700;
+  font-size: 0.72rem; font-family: inherit; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.feat-wrap .feat-more-btn:hover { background: #e8eef6; border-color: #c5d4e8; }
+.feat-wrap.is-open .feat-more-btn { background: #e8eef6; }
+.feat-wrap .feat-rest[hidden] { display: none !important; }
+.feat-wrap.is-open .feat-rest { display: flex !important; }
+.vd-features-section .feature-chips-all {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+}
+.vd-features-section .feat {
+  font-size: 0.78rem; padding: 0.35rem 0.6rem;
+  background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
+  border-radius: 8px; font-weight: 600;
+}
+.vd-feat-count {
+  font-size: 0.75rem; font-weight: 700; color: var(--muted);
+  background: var(--bg-soft); border-radius: 999px; padding: 0.1rem 0.45rem;
+  margin-left: 0.35rem;
+}
+.vd-spec {
+  font-size: 0.95rem; line-height: 1.45; color: var(--text);
+  background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.75rem 0.9rem; margin: 0;
+}
+.vehicle-card .feat-wrap { position: relative; z-index: 2; }
+
 </style>
 
 </head>
@@ -1246,59 +1280,47 @@ function toggleImages() {
 function featureChips(v, limit) {
   const feats = Array.isArray(v.key_features) ? v.key_features.filter(Boolean) : [];
   if (!feats.length) return '';
-  const lim = (limit == null || limit < 0) ? feats.length : limit;
-  const head = feats.slice(0, lim);
-  const rest = feats.slice(lim);
-  let html = `<div class="feature-chips">${head.map(f =>
+  const lim = (limit == null || limit < 0) ? feats.length : Math.min(limit, feats.length);
+  const showAll = limit == null || limit < 0 || limit >= feats.length;
+  const head = showAll ? feats : feats.slice(0, lim);
+  const chips = (list) => list.map(f =>
     `<span class="feat">${String(f).replace(/</g,'&lt;')}</span>`
-  ).join('')}</div>`;
-  if (rest.length) {
-    const uid = 'fx_' + String(v.registration || v.id || Math.random()).replace(/[^a-zA-Z0-9]/g, '');
-    html += `<button type="button" class="feat-more-btn" data-target="${uid}" onclick="toggleFeatPanel(event)">Show all ${feats.length} features</button>`;
-    html += `<div class="feat-panel" id="${uid}" hidden>
-      <div class="feature-chips feature-chips-all">${feats.map(f =>
-        `<span class="feat">${String(f).replace(/</g,'&lt;')}</span>`
-      ).join('')}</div>
-    </div>`;
+  ).join('');
+
+  if (showAll) {
+    return `<div class="feature-chips feature-chips-all">${chips(feats)}</div>`;
   }
-  return html;
+
+  const uid = 'fx_' + String(v.registration || v.id || Math.random()).replace(/[^a-zA-Z0-9]/g, '');
+  // Collapsed: first N chips. Expanded: all chips. Toggle via class on wrapper.
+  return `<div class="feat-wrap" id="${uid}" data-total="${feats.length}">
+    <div class="feature-chips feat-head">${chips(head)}</div>
+    <div class="feature-chips feature-chips-all feat-rest" hidden>${chips(feats)}</div>
+    <button type="button" class="feat-more-btn" aria-expanded="false"
+      onclick="event.preventDefault();event.stopPropagation();toggleFeatPanel('${uid}',this)">
+      +${feats.length - lim} more features
+    </button>
+  </div>`;
 }
 
-async function savePegNumber() {
-  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
-  if (!v) return;
-  const input = document.getElementById('detailPeg');
-  if (!input) return;
-  const peg = (input.value || '').trim();
-  v.dealer_peg = peg;
-  try { save(); } catch (_) {}
-  const btn = document.querySelector('.btn-peg-save');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
-  const r = await sharedSave({ registration: v.registration, dealer_peg: peg });
-  if (btn) { btn.disabled = false; btn.textContent = r.ok ? 'Saved' : 'Save'; }
-  if (!r.ok) alert('PEG saved on this device only — shared save failed: ' + (r.error || ''));
-  else setTimeout(() => { if (btn) btn.textContent = 'Save'; }, 1500);
-}
-
-function toggleFeatPanel(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const btn = e.currentTarget;
-  const id = btn.getAttribute('data-target');
-  const panel = id ? document.getElementById(id) : null;
-  if (!panel) return;
-  const open = panel.hasAttribute('hidden');
-  if (open) {
-    panel.removeAttribute('hidden');
-    btn.textContent = 'Show less';
-    btn.classList.add('is-open');
-  } else {
-    panel.setAttribute('hidden', '');
-    const n = panel.querySelectorAll('.feat').length;
-    btn.textContent = 'Show all ' + n + ' features';
-    btn.classList.remove('is-open');
+function toggleFeatPanel(uid, btn) {
+  const wrap = document.getElementById(uid);
+  if (!wrap) return;
+  const head = wrap.querySelector('.feat-head');
+  const rest = wrap.querySelector('.feat-rest');
+  const open = wrap.classList.toggle('is-open');
+  if (rest) {
+    if (open) rest.removeAttribute('hidden');
+    else rest.setAttribute('hidden', '');
+  }
+  if (head) head.style.display = open ? 'none' : '';
+  if (btn) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const total = wrap.getAttribute('data-total') || '';
+    btn.textContent = open ? 'Show less' : ('+' + Math.max(0, Number(total) - (head ? head.querySelectorAll('.feat').length : 0)) + ' more features');
   }
 }
+
 
 function cardHtml(v) {
   const flags = (v.status_flags || []).filter(f => f !== 'Reserved').map(f => `<span class="flag">${f}</span>`).join('');
@@ -1323,7 +1345,7 @@ function cardHtml(v) {
       ${reservedByHtml(v)}
       ${prepBadge(v)}
       ${soldByHtml(v)}
-      ${featureChips(v, 3)}
+      ${featureChips(v, 4)}
       ${catBadge(v)}${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
     </div>
   </div>`;
@@ -1496,7 +1518,7 @@ function openDetail(id) {
     </div>`;
 
   const features = (v.key_features && v.key_features.length)
-    ? `<div class="vd-section"><h3 class="vd-section-title">Key features</h3>${featureChips(v, 5)}</div>`
+    ? `<div class="vd-section vd-features-section"><h3 class="vd-section-title">Key features <span class="vd-feat-count">${(v.key_features||[]).length}</span></h3>${featureChips(v, -1)}</div>`
     : '';
 
   const svc = (v.service_history || '').trim();

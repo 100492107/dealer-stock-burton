@@ -801,10 +801,10 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   </div>
 
   <div class="dash-strip" id="dashStrip" aria-label="Stock summary">
-    <div class="dash-item"><span class="dash-n" id="dashInStock">0</span><span class="dash-l">In stock</span></div>
-    <div class="dash-item dash-reserved"><span class="dash-n" id="dashReserved">0</span><span class="dash-l">Reserved</span></div>
-    <div class="dash-item"><span class="dash-n" id="dashSold7">0</span><span class="dash-l">Sold (7 days)</span></div>
-    <div class="dash-item dash-age"><span class="dash-n" id="dashOver60">0</span><span class="dash-l">Over 60 days</span></div>
+    <div class="dash-item" title="Vehicles currently on Pentagon Burton (plus demo/pre-reg/new on site)"><span class="dash-n" id="dashInStock">—</span><span class="dash-l">In stock</span></div>
+    <div class="dash-item dash-reserved" title="Reserved on website or salesperson has claimed it"><span class="dash-n" id="dashReserved">—</span><span class="dash-l">Reserved</span></div>
+    <div class="dash-item" title="Came off the website in the last 7 days"><span class="dash-n" id="dashSold7">—</span><span class="dash-l">Sold (7 days)</span></div>
+    <div class="dash-item dash-age" title="On site 60+ days since first tracked here"><span class="dash-n" id="dashOver60">—</span><span class="dash-l">Over 60 days</span></div>
   </div>
   
   <div class="filters-bar" id="filtersBar">
@@ -1426,14 +1426,17 @@ function renderList() {
   const area = document.getElementById('listArea');
   if (!list.length) {
     area.innerHTML = '<div class="empty">No vehicles found.</div>';
+    try { updateDashStrip(); } catch (_) {}
     return;
   }
   if (listView) {
     area.innerHTML = listTableHtml(list);
+    try { updateDashStrip(); } catch (_) {}
     return;
   }
   if (sortBy !== 'default') {
     area.innerHTML = `<div class="vehicle-grid">${list.map(cardHtml).join('')}</div>`;
+    try { updateDashStrip(); } catch (_) {}
     return;
   }
   const grouped = groupVehicles(list);
@@ -1453,6 +1456,7 @@ function renderList() {
     html += `</section>`;
   });
   area.innerHTML = html;
+  try { updateDashStrip(); } catch (_) {}
 }
 
 function statusPills(v) {
@@ -1817,15 +1821,26 @@ async function saveSalesDesk() {
 }
 
 function updateDashStrip() {
-  const onSite = vehicles.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(v.category || 'Stock'));
-  const reserved = onSite.filter(v => (v.status_flags || []).includes('Reserved') || (v.reserved_by || '').trim());
+  const ON = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'];
+  // In stock = still on site (matches Pentagon live after sync)
+  const onSite = (vehicles || []).filter(v => ON.includes(v.category || 'Stock'));
+  // Reserved = website reserved flag OR salesperson ownership on the desk
+  const reserved = onSite.filter(v =>
+    (v.status_flags || []).includes('Reserved') ||
+    !!(v.reserved_by || '').trim()
+  );
+  // Sold in last 7 days (from our sold_date when it left the website)
   const weekAgo = Date.now() - 7 * 86400000;
-  const sold7 = vehicles.filter(v => {
-    if ((v.category || '') !== 'Sold' && (v.category || '') !== 'Delivered') return false;
-    if (!v.sold_date) return false;
-    const t = new Date(v.sold_date).getTime();
-    return !isNaN(t) && t >= weekAgo;
+  const sold7 = (vehicles || []).filter(v => {
+    const cat = v.category || '';
+    if (cat !== 'Sold' && cat !== 'Delivered') return false;
+    const raw = v.sold_date || v.updatedAt || '';
+    if (!raw) return true; // count recent unknowns as in-window if sold
+    const t = new Date(raw).getTime();
+    if (isNaN(t)) return true;
+    return t >= weekAgo;
   });
+  // Ageing: days since first tracked on this system (bring_into_stock_date)
   const over60 = onSite.filter(v => {
     const n = daysInStock(v);
     return n != null && n >= 60;
@@ -2074,7 +2089,7 @@ function startAutoRefresh() {
 }
 
 (async function init() {
-  if (await loadFromVehiclesJson()) { startAutoRefresh(); startReliableSync(); renderList(); return; }
+  if (await loadFromVehiclesJson()) { startAutoRefresh(); startReliableSync(); renderList(); try { updateDashStrip(); } catch(_){} return; }
   if (!vehicles.length) vehicles = IMPORTED_STOCK;
   setSyncStatus(vehicles.length ? vehicles.length + ' cars · local' : 'No data', '');
   updateImagesToggleBtn();

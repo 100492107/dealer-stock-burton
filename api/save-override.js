@@ -72,6 +72,7 @@ module.exports = async function handler(req, res) {
   if (body.reserved_by !== undefined) next.reserved_by = body.reserved_by;
   if (body.reserved_at !== undefined) next.reserved_at = body.reserved_at;
   if (body.sold_by !== undefined) next.sold_by = body.sold_by;
+  if (body.sold_date !== undefined) next.sold_date = body.sold_date;
   if (body.notes !== undefined) next.notes = body.notes;
   if (body.add_note) {
     const notes = Array.isArray(next.notes) ? next.notes.slice() : [];

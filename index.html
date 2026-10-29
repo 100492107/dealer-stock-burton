@@ -1785,7 +1785,6 @@ document.querySelectorAll('.overlay').forEach(o => {
 });
 
 
-async 
 async function saveSalesDesk() {
   const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
   if (!v) return;
@@ -1864,7 +1863,7 @@ function exportCsv() {
 }
 
 
-function sharedSave(payload) {
+async function sharedSave(payload) {
   try {
     const res = await fetch('/api/save-override', {
       method: 'POST',
@@ -2047,6 +2046,12 @@ async function pollStockQuiet() {
       v.service_history_notes = (o.service_history_notes != null ? o.service_history_notes : null) ?? (prev.service_history_notes || '');
       v.status_flags = (o.status_flags != null ? o.status_flags : null) ?? (prev.status_flags || []);
       v.special_offer = (o.special_offer != null ? o.special_offer : null) ?? (prev.special_offer || v.special_offer || '');
+      v.dealer_peg = (o.dealer_peg != null ? o.dealer_peg : null) ?? (prev.dealer_peg || v.dealer_peg || '');
+      v.prep_status = (o.prep_status != null ? o.prep_status : null) ?? (prev.prep_status || v.prep_status || '');
+      v.reserved_by = (o.reserved_by != null ? o.reserved_by : null) ?? (prev.reserved_by || v.reserved_by || '');
+      v.reserved_at = (o.reserved_at != null ? o.reserved_at : null) ?? (prev.reserved_at || v.reserved_at || '');
+      v.sold_by = (o.sold_by != null ? o.sold_by : null) ?? (prev.sold_by || v.sold_by || '');
+      if (v.previous_price == null && prev.previous_price != null) v.previous_price = prev.previous_price;
       if (o.category) v.category = o.category;
       else if (prev.category && prev.category !== 'Stock') v.category = prev.category;
       if (prev.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;

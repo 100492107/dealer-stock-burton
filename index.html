@@ -744,6 +744,10 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 .price-move { font-size: 0.85rem; margin-top: 0.15rem; }
 .price-move .was { text-decoration: line-through; color: var(--muted); margin-right: 0.35rem; }
 .price-move .drop { color: #b91c1c; font-weight: 700; }
+
+.vd-ops-actions .btn { flex: 1; min-width: 7rem; }
+#detailStatus { font-weight: 700; }
+
 </style>
 
 </head>
@@ -804,7 +808,7 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
     <div class="dash-item" title="Vehicles currently on Pentagon Burton (plus demo/pre-reg/new on site)"><span class="dash-n" id="dashInStock">—</span><span class="dash-l">In stock</span></div>
     <div class="dash-item dash-reserved" title="Reserved on website or salesperson has claimed it"><span class="dash-n" id="dashReserved">—</span><span class="dash-l">Reserved</span></div>
     <div class="dash-item" title="Came off the website in the last 7 days"><span class="dash-n" id="dashSold7">—</span><span class="dash-l">Sold (7 days)</span></div>
-    <div class="dash-item dash-age" title="On site 60+ days since first tracked here"><span class="dash-n" id="dashOver60">—</span><span class="dash-l">Over 60 days</span></div>
+    <div class="dash-item dash-age" title="Tracked on this system for 60+ days (not full yard age)"><span class="dash-n" id="dashOver60">—</span><span class="dash-l">Tracked 60d+</span></div>
   </div>
   
   <div class="filters-bar" id="filtersBar">
@@ -1534,8 +1538,37 @@ function openDetail(id) {
           <h3 class="vd-section-title">Sales desk</h3>
           <div class="vd-ops">
             <div class="vd-ops-row">
-              <label>Days in stock</label>
-              <div style="font-weight:700">${(() => { const n = daysInStock(v); return n == null ? '—' : n + ' days'; })()}</div>
+              <label>Status</label>
+              <select id="detailStatus" onchange="onDetailStatusChange()">
+                ${(() => {
+                  const cat = v.category || 'Stock';
+                  const res = (v.status_flags || []).includes('Reserved') || !!(v.reserved_by || '').trim();
+                  let cur = 'available';
+                  if (cat === 'Sold') cur = 'sold';
+                  else if (cat === 'Delivered') cur = 'delivered';
+                  else if (res) cur = 'reserved';
+                  return ['available','reserved','sold','delivered'].map(s => {
+                    const labels = {available:'Available',reserved:'Reserved',sold:'Sold',delivered:'Delivered'};
+                    return `<option value="${s}"${cur===s?' selected':''}>${labels[s]}</option>`;
+                  }).join('');
+                })()}
+              </select>
+            </div>
+            <div class="vd-ops-row" id="rowReservedBy" style="${((v.status_flags||[]).includes('Reserved')||(v.reserved_by||'').trim()) && !['Sold','Delivered'].includes(v.category||'') ? '' : 'display:none'}">
+              <label>Who's on it</label>
+              <input type="text" id="detailReservedBy" value="${String(v.reserved_by||'').replace(/"/g,'&quot;')}" placeholder="Salesperson name">
+            </div>
+            <div class="vd-ops-row" id="rowSoldBy" style="${['Sold','Delivered'].includes(v.category||'') ? '' : 'display:none'}">
+              <label>Sold by</label>
+              <input type="text" id="detailSoldBy" value="${String(v.sold_by||'').replace(/"/g,'&quot;')}" placeholder="Who sold it">
+            </div>
+            <div class="vd-ops-row">
+              <label>Category / type</label>
+              <select id="detailCategory">
+                ${['Stock','New','Demonstrators','Pre-reg','Commercials','Arriving Soon','Sold','Delivered'].map(c =>
+                  `<option value="${c}"${(v.category||'Stock')===c?' selected':''}>${c}</option>`
+                ).join('')}
+              </select>
             </div>
             <div class="vd-ops-row">
               <label>Prep status</label>
@@ -1545,15 +1578,13 @@ function openDetail(id) {
               </select>
             </div>
             <div class="vd-ops-row">
-              <label>Reserved — who's on it</label>
-              <input type="text" id="detailReservedBy" value="${String(v.reserved_by||'').replace(/"/g,'&quot;')}" placeholder="Name of salesperson">
-            </div>
-            <div class="vd-ops-row">
-              <label>Sold by</label>
-              <input type="text" id="detailSoldBy" value="${String(v.sold_by||'').replace(/"/g,'&quot;')}" placeholder="Who sold it">
+              <label>Days tracked</label>
+              <div style="font-weight:700">${(() => { const n = daysInStock(v); return n == null ? '—' : n + ' days'; })()}</div>
             </div>
             <div class="vd-ops-actions">
-              <button type="button" class="btn btn-primary" onclick="saveSalesDesk()">Save desk info</button>
+              <button type="button" class="btn btn-primary" onclick="saveSalesDesk()">Save status</button>
+              <button type="button" class="btn btn-secondary" onclick="quickStatus('available')">Clear reserved</button>
+              <button type="button" class="btn btn-secondary" onclick="quickStatus('sold')">Mark sold</button>
             </div>
           </div>
         </div>
@@ -1792,33 +1823,112 @@ document.querySelectorAll('.overlay').forEach(o => {
 async function saveSalesDesk() {
   const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
   if (!v) return;
+  const status = (document.getElementById('detailStatus') || {}).value || 'available';
   const prep = (document.getElementById('detailPrep') || {}).value || '';
-  const reservedBy = (document.getElementById('detailReservedBy') || {}).value || '';
-  const soldBy = (document.getElementById('detailSoldBy') || {}).value || '';
-  v.prep_status = prep;
-  v.reserved_by = reservedBy.trim();
-  if (v.reserved_by) {
-    v.reserved_at = v.reserved_at || new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' });
-    v.status_flags = Array.from(new Set([...(v.status_flags || []).filter(f => f !== 'Reserved'), 'Reserved']));
-  } else {
-    v.reserved_at = '';
-    v.status_flags = (v.status_flags || []).filter(f => f !== 'Reserved');
-  }
-  v.sold_by = soldBy.trim();
+  const reservedBy = ((document.getElementById('detailReservedBy') || {}).value || '').trim();
+  const soldBy = ((document.getElementById('detailSoldBy') || {}).value || '').trim();
+  let category = (document.getElementById('detailCategory') || {}).value || (v.category || 'Stock');
+
+  applyDeskStatus(v, status, { reservedBy, soldBy, category, prep });
+
   try { save(); } catch (_) {}
   const payload = {
     registration: v.registration,
-    prep_status: v.prep_status,
-    reserved_by: v.reserved_by,
+    category: v.category,
+    prep_status: v.prep_status || '',
+    reserved_by: v.reserved_by || '',
     reserved_at: v.reserved_at || '',
-    sold_by: v.sold_by,
-    status_flags: v.status_flags,
+    sold_by: v.sold_by || '',
+    status_flags: v.status_flags || [],
   };
+  if (v.sold_date) payload.sold_date = v.sold_date;
   const r = await sharedSave(payload);
   if (!r.ok) alert('Saved on this device only — shared save failed: ' + (r.error || ''));
   openDetail(currentId);
   renderList();
 }
+
+function onDetailStatusChange() {
+  const status = (document.getElementById('detailStatus') || {}).value || 'available';
+  const rowR = document.getElementById('rowReservedBy');
+  const rowS = document.getElementById('rowSoldBy');
+  if (rowR) rowR.style.display = status === 'reserved' ? '' : 'none';
+  if (rowS) rowS.style.display = (status === 'sold' || status === 'delivered') ? '' : 'none';
+  const cat = document.getElementById('detailCategory');
+  if (cat) {
+    if (status === 'sold') cat.value = 'Sold';
+    else if (status === 'delivered') cat.value = 'Delivered';
+    else if (['Sold','Delivered'].includes(cat.value)) cat.value = 'Stock';
+  }
+}
+
+function applyDeskStatus(v, status, opts) {
+  opts = opts || {};
+  const reservedBy = opts.reservedBy != null ? opts.reservedBy : (v.reserved_by || '');
+  const soldBy = opts.soldBy != null ? opts.soldBy : (v.sold_by || '');
+  const prep = opts.prep != null ? opts.prep : (v.prep_status || '');
+  let category = opts.category != null ? opts.category : (v.category || 'Stock');
+  const today = new Date().toISOString().slice(0, 10);
+  const todayGB = new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' });
+
+  v.prep_status = prep;
+
+  if (status === 'reserved') {
+    if (category === 'Sold' || category === 'Delivered') category = 'Stock';
+    v.category = category;
+    v.reserved_by = reservedBy;
+    v.reserved_at = v.reserved_at || todayGB;
+    v.status_flags = Array.from(new Set([...(v.status_flags || []).filter(f => f !== 'Reserved'), 'Reserved']));
+    delete v.sold_date;
+  } else if (status === 'sold') {
+    v.category = 'Sold';
+    v.sold_by = soldBy;
+    v.sold_date = v.sold_date || today;
+    v.reserved_by = '';
+    v.reserved_at = '';
+    v.status_flags = (v.status_flags || []).filter(f => f !== 'Reserved');
+  } else if (status === 'delivered') {
+    v.category = 'Delivered';
+    v.sold_by = soldBy;
+    v.sold_date = v.sold_date || today;
+    v.reserved_by = '';
+    v.reserved_at = '';
+    v.status_flags = (v.status_flags || []).filter(f => f !== 'Reserved');
+  } else {
+    // available
+    if (category === 'Sold' || category === 'Delivered') category = 'Stock';
+    v.category = category;
+    v.reserved_by = '';
+    v.reserved_at = '';
+    v.status_flags = (v.status_flags || []).filter(f => f !== 'Reserved');
+    delete v.sold_date;
+  }
+}
+
+async function quickStatus(status) {
+  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
+  if (!v) return;
+  const reservedBy = ((document.getElementById('detailReservedBy') || {}).value || '').trim();
+  const soldBy = ((document.getElementById('detailSoldBy') || {}).value || '').trim();
+  const prep = (document.getElementById('detailPrep') || {}).value || '';
+  applyDeskStatus(v, status, { reservedBy, soldBy, prep, category: v.category });
+  try { save(); } catch (_) {}
+  const payload = {
+    registration: v.registration,
+    category: v.category,
+    prep_status: v.prep_status || '',
+    reserved_by: v.reserved_by || '',
+    reserved_at: v.reserved_at || '',
+    sold_by: v.sold_by || '',
+    status_flags: v.status_flags || [],
+  };
+  if (v.sold_date) payload.sold_date = v.sold_date;
+  const r = await sharedSave(payload);
+  if (!r.ok) alert('Saved on this device only — shared save failed: ' + (r.error || ''));
+  openDetail(currentId);
+  renderList();
+}
+
 
 function updateDashStrip() {
   const ON = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'];
@@ -1992,6 +2102,12 @@ function applyOverridesToVehicles(overrides) {
     if (o.sold_by != null && o.sold_by !== v.sold_by) {
       v.sold_by = o.sold_by; changed = true;
     }
+    if (o.sold_date != null && o.sold_date !== v.sold_date) {
+      v.sold_date = o.sold_date; changed = true;
+    }
+    if (o.category != null && o.category !== v.category) {
+      v.category = o.category; changed = true;
+    }
     if (o.status_flags != null && JSON.stringify(o.status_flags) !== JSON.stringify(v.status_flags || [])) {
       v.status_flags = o.status_flags; changed = true;
     }
@@ -2067,6 +2183,8 @@ async function pollStockQuiet() {
       v.reserved_at = (o.reserved_at != null ? o.reserved_at : null) ?? (prev.reserved_at || v.reserved_at || '');
       v.sold_by = (o.sold_by != null ? o.sold_by : null) ?? (prev.sold_by || v.sold_by || '');
       if (v.previous_price == null && prev.previous_price != null) v.previous_price = prev.previous_price;
+      if (o.sold_date) v.sold_date = o.sold_date;
+      else if (prev.sold_date) v.sold_date = prev.sold_date;
       if (o.category) v.category = o.category;
       else if (prev.category && prev.category !== 'Stock') v.category = prev.category;
       if (prev.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;

@@ -75,5 +75,14 @@
     "category": "Stock",
     "notes": [],
     "updatedAt": "2026-10-28T11:53:25.303Z"
+  },
+  "AG21DZP": {
+    "status_flags": [],
+    "category": "Stock",
+    "prep_status": "",
+    "reserved_by": "",
+    "reserved_at": "",
+    "sold_by": "",
+    "updatedAt": "2026-10-29T16:41:46.759Z"
   }
 }

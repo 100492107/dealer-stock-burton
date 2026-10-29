@@ -1283,34 +1283,44 @@ function normalizeFeatureLabel(raw) {
   if (!f) return '';
   const low = f.toLowerCase();
 
-  // Leather steering / gear knob / handbrake etc. are NOT seat leather — ignore
-  if (/leather/i.test(f) && /steering\s*wheel|gear\s*knob|handbrake|gaiter|armrest|door\s*card|dashboard|trim\s*insert/i.test(f) && !/seat/i.test(f)) {
+  // Ignore leather on controls / trim that is not seats
+  if (/leather/i.test(f) && /steering\s*wheel|gear\s*(knob|lever|shift)|handbrake|gaiter|armrest|door\s*(centre|center)\s*trim|door\s*card/i.test(f) && !/seat/i.test(f)) {
     return '';
   }
 
-  // Seat / cabin upholstery only
-  if (/leather|nappa|dakota|vernasca|sensatec|alcantara|leatherette/i.test(f)) {
-    if (/alcantara/i.test(f)) return 'Alcantara';
-    if (/nappa/i.test(f)) return 'Nappa Leather';
-    if (/dakota/i.test(f)) return 'Dakota Leather';
-    if (/vernasca/i.test(f)) return 'Vernasca Leather';
-    if (/sensatec|leatherette|synthetic\s*leather|artificial\s*leather|faux\s*leather|vegan\s*leather|pu\s*leather|leather\s*effect/i.test(f)) {
-      // bolsters only = part
-      if (/bolster/i.test(f)) return 'Part Leather';
-      return 'Leatherette';
-    }
-    if (/part[\s-]*leather|partial\s*leather|half[\s-]*leather|leather\s*bolster|leather\s*\/\s*cloth|cloth\s*\/\s*leather|leather\s*inserts?|mixed\s*leather|tri-material.*leather/i.test(f)) {
-      return 'Part Leather';
-    }
-    if (/full[\s-]*leather/i.test(f)) return 'Full Leather';
-    if (/leather\s*upholstery|leather\s*interior/i.test(f) && !/part|partial|half/i.test(f)) return 'Full Leather';
-    // Bare "Leather Seats" was mass-inferred from any "leather" on the page — do not show
-    if (/^leather\s*seats?$/i.test(f) || /^leather$/i.test(f)) return '';
-    // Explicit seat leather wording only
-    if (/leather\s*seats?/i.test(f) && /full/i.test(f)) return 'Full Leather';
-    if (/leather\s*seats?/i.test(f) && /part|partial/i.test(f)) return 'Part Leather';
-    return ''; // don't guess
+  // Named full leathers (OEM)
+  if (/nappa/i.test(f)) return 'Nappa Leather';
+  if (/dakota/i.test(f)) return 'Dakota Leather';
+  if (/vernasca/i.test(f)) return 'Vernasca Leather';
+  if (/merino/i.test(f)) return 'Merino Leather';
+  if (/alcantara/i.test(f) && /seat|upholstery|interior|trim/i.test(f)) return 'Alcantara';
+  if (/alcantara/i.test(f) && !/steering|gear/i.test(f)) return 'Alcantara';
+
+  // Part leather / mixed
+  if (/part[\s-]*leather|partial\s*leather|half[\s-]*leather|leather\s*bolster|leather\s*inserts?|mixed\s*leather|tri-material.*leather|technoleather|fabric[\s-]*technoleather|leather\s*\/\s*cloth|cloth\s*\/\s*leather/i.test(f)) {
+    return 'Part Leather';
   }
+  if (/vegan\s*leather.*bolster|bolster.*vegan\s*leather/i.test(f)) return 'Part Leather';
+
+  // Leatherette / faux
+  if (/sensatec|leatherette|synthetic\s*leather|artificial\s*leather|faux\s*leather|leather\s*effect|pu\s*leather/i.test(f)) {
+    return 'Leatherette';
+  }
+  if (/vegan\s*leather/i.test(f) && !/bolster/i.test(f)) return 'Leatherette';
+
+  // Explicit full
+  if (/full[\s-]*leather/i.test(f)) return 'Full Leather';
+  if (/leather\s*upholstery|leather\s*interior/i.test(f) && !/part|partial|half|door|armrest/i.test(f)) return 'Full Leather';
+
+  // "Leather - Colour" style (often seat pack on Hyundai/Kia etc.)
+  if (/^leather\s*[-–—]/i.test(f) && !/steering|gear|handbrake/i.test(f)) return 'Full Leather';
+
+  // Explicit seat leather
+  if (/leather\s*seats?/i.test(f) && /full/i.test(f)) return 'Full Leather';
+  if (/leather\s*seats?/i.test(f) && /part|partial/i.test(f)) return 'Part Leather';
+
+  // Bare "Leather Seats" / "Leather" from bad mass-tagging — hide (not reliable)
+  if (/^leather\s*seats?$/i.test(f) || /^leather$/i.test(f)) return '';
 
   if (/heated\s*(front\s*)?seats?/i.test(f)) return 'Heated Seats';
   if (/ventilated|cooled\s*seats?/i.test(f)) return 'Ventilated Seats';
@@ -1327,7 +1337,7 @@ function normalizeFeaturesList(list) {
   const seen = new Set();
   const out = [];
   // Prefer more specific leather labels if both appear
-  const rank = { 'Nappa Leather': 0, 'Dakota Leather': 0, 'Vernasca Leather': 0, 'Full Leather': 1, 'Part Leather': 1, 'Alcantara': 1, 'Leather': 3, 'Leatherette': 4 };
+  const rank = { 'Nappa Leather': 0, 'Dakota Leather': 0, 'Vernasca Leather': 0, 'Merino Leather': 0, 'Full Leather': 1, 'Alcantara': 1, 'Part Leather': 2, 'Leatherette': 3, 'Leather': 4 };
   const leatherish = [];
   for (const raw of list || []) {
     const n = normalizeFeatureLabel(raw);

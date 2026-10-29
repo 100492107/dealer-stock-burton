@@ -482,7 +482,8 @@ module.exports = async function handler(req, res) {
       if ((v.status_flags || []).includes('New')) {
         if (!['Demonstrators','Pre-reg','Commercials'].includes(v.category)) v.category = 'New';
       }
-      if (v.is_reserved) {
+      const deskReserved = !!(v.reserved_by && String(v.reserved_by).trim());
+      if (v.is_reserved || deskReserved) {
         v.status_flags = Array.from(new Set([...(v.status_flags || []).filter(f => f !== 'Reserved'), 'Reserved']));
       } else if (v.status_flags && v.status_flags.length) {
         v.status_flags = v.status_flags.filter(f => f !== 'Reserved');
@@ -533,7 +534,7 @@ module.exports = async function handler(req, res) {
     const soldN = result.filter(v => v.category === 'Sold').length;
     const newN = result.filter(v => v.category === 'New').length;
     const priced = result.filter(v => v.retail_price).length;
-    const reservedN = result.filter(v => (v.status_flags || []).includes('Reserved')).length;
+    const reservedN = result.filter(v => (v.status_flags || []).includes('Reserved') || (v.reserved_by && String(v.reserved_by).trim())).length;
 
     return res.status(200).json({
       ok: true,

@@ -391,13 +391,13 @@ async function writeJsonFile(path, obj, sha, message) {
   return result;
 }
 
-const MANUAL = ['notes', 'service_history', 'service_history_notes', 'status_flags', 'special_offer', 'dealer_peg', 'peg_number'];
+const MANUAL = ['notes', 'service_history', 'service_history_notes', 'status_flags', 'special_offer', 'dealer_peg', 'peg_number', 'prep_status', 'reserved_by', 'reserved_at', 'sold_by', 'previous_price'];
 function applyManual(vehicle, prev, overrides, isLive) {
   prev = prev || {};
   const o = overrides[vehicle.registration] || overrides[vehicle.id] || {};
   for (const key of MANUAL) {
     if (o[key] != null) vehicle[key] = o[key];
-    else if (prev[key] != null && (key === 'dealer_peg' || key === 'peg_number')) vehicle[key] = prev[key];
+    else if (prev[key] != null && (key === 'dealer_peg' || key === 'peg_number' || key === 'prep_status' || key === 'reserved_by' || key === 'reserved_at' || key === 'sold_by' || key === 'previous_price')) vehicle[key] = prev[key];
     else if (prev[key]) vehicle[key] = prev[key];
   }
   if (prev.bring_into_stock_date) vehicle.bring_into_stock_date = prev.bring_into_stock_date;
@@ -472,6 +472,12 @@ module.exports = async function handler(req, res) {
       const prev = prevByReg[reg];
       if (prev && (prev.category === 'Sold' || prev.category === 'Delivered')) returnedCount++;
       applyManual(v, prev, overrides, true);
+      if (prev && prev.retail_price != null && v.retail_price != null && Number(prev.retail_price) !== Number(v.retail_price)) {
+        v.previous_price = prev.retail_price;
+      } else if (prev && prev.previous_price != null) {
+        v.previous_price = prev.previous_price;
+      }
+      if (!v.sold_by && prev && prev.sold_by) v.sold_by = prev.sold_by;
       if (v.category === 'Sold' || v.category === 'Delivered') { v.category = 'Stock'; delete v.sold_date; }
       if ((v.status_flags || []).includes('New')) {
         if (!['Demonstrators','Pre-reg','Commercials'].includes(v.category)) v.category = 'New';

@@ -1283,23 +1283,33 @@ function normalizeFeatureLabel(raw) {
   if (!f) return '';
   const low = f.toLowerCase();
 
-  // Leather — be precise; never say "Leather Seats" for part/leatherette
-  if (/leather|nappa|dakota|vernasca|sensatec|alcantara|leatherette|vinyl\s*seat/i.test(f)) {
+  // Leather steering / gear knob / handbrake etc. are NOT seat leather — ignore
+  if (/leather/i.test(f) && /steering\s*wheel|gear\s*knob|handbrake|gaiter|armrest|door\s*card|dashboard|trim\s*insert/i.test(f) && !/seat/i.test(f)) {
+    return '';
+  }
+
+  // Seat / cabin upholstery only
+  if (/leather|nappa|dakota|vernasca|sensatec|alcantara|leatherette/i.test(f)) {
     if (/alcantara/i.test(f)) return 'Alcantara';
     if (/nappa/i.test(f)) return 'Nappa Leather';
     if (/dakota/i.test(f)) return 'Dakota Leather';
     if (/vernasca/i.test(f)) return 'Vernasca Leather';
-    if (/sensatec/i.test(f) || /leatherette|synthetic\s*leather|artificial\s*leather|faux\s*leather|pu\s*leather/i.test(f)) {
+    if (/sensatec|leatherette|synthetic\s*leather|artificial\s*leather|faux\s*leather|vegan\s*leather|pu\s*leather|leather\s*effect/i.test(f)) {
+      // bolsters only = part
+      if (/bolster/i.test(f)) return 'Part Leather';
       return 'Leatherette';
     }
-    if (/part[\s-]*leather|partial\s*leather|half[\s-]*leather|leather\s*bolster|leather\s*\/\s*cloth|cloth\s*\/\s*leather|leather\s*inserts?|mixed\s*leather/i.test(f)) {
+    if (/part[\s-]*leather|partial\s*leather|half[\s-]*leather|leather\s*bolster|leather\s*\/\s*cloth|cloth\s*\/\s*leather|leather\s*inserts?|mixed\s*leather|tri-material.*leather/i.test(f)) {
       return 'Part Leather';
     }
     if (/full[\s-]*leather/i.test(f)) return 'Full Leather';
     if (/leather\s*upholstery|leather\s*interior/i.test(f) && !/part|partial|half/i.test(f)) return 'Full Leather';
-    // Generic "leather" / "leather seats" — don't claim full vs part if website didn't say
-    if (/leather\s*seats?|\bleather\b/i.test(f)) return 'Leather';
-
+    // Bare "Leather Seats" was mass-inferred from any "leather" on the page — do not show
+    if (/^leather\s*seats?$/i.test(f) || /^leather$/i.test(f)) return '';
+    // Explicit seat leather wording only
+    if (/leather\s*seats?/i.test(f) && /full/i.test(f)) return 'Full Leather';
+    if (/leather\s*seats?/i.test(f) && /part|partial/i.test(f)) return 'Part Leather';
+    return ''; // don't guess
   }
 
   if (/heated\s*(front\s*)?seats?/i.test(f)) return 'Heated Seats';

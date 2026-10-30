@@ -782,6 +782,18 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 }
 .vehicle-card .feat-wrap { position: relative; z-index: 2; }
 
+
+.badge-spoticar, .status-pill-spoticar {
+  background: #1e3a5f; color: #fff; border: 1px solid #0f2744;
+  font-weight: 700; font-size: 0.65rem; letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem; border-radius: 4px;
+}
+.spoticar-toggle input { width: 1.1rem; height: 1.1rem; accent-color: #1e3a5f; }
+#navLinks button[data-cat="SPOTiCAR"].active,
+.cat-chip[data-cat="SPOTiCAR"].active {
+  background: #1e3a5f; color: #fff; border-color: #1e3a5f;
+}
+
 </style>
 
 </head>
@@ -795,6 +807,7 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   <div class="nav-links" id="navLinks">
     <button data-cat="Stock" class="active">Stock</button>
     <button data-cat="New">New</button>
+    <button data-cat="SPOTiCAR">SPOTiCAR</button>
     <button data-cat="Demonstrators">Demonstrators</button>
     <button data-cat="Pre-reg">Pre-reg</button>
     <button data-cat="Commercials">Commercials</button>
@@ -817,6 +830,7 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   <div class="mobile-cat-scroll" id="mobileCatScroll">
     <button type="button" class="cat-chip active" data-cat="Stock">Stock</button>
     <button type="button" class="cat-chip" data-cat="New">New</button>
+    <button type="button" class="cat-chip" data-cat="SPOTiCAR">SPOTiCAR</button>
     <button type="button" class="cat-chip" data-cat="Sold">Sold</button>
     <button type="button" class="cat-chip" data-cat="Demonstrators">Demonstrators</button>
     <button type="button" class="cat-chip" data-cat="Pre-reg">Pre-reg</button>
@@ -1415,7 +1429,7 @@ function cardHtml(v) {
     <div class="card-body">
       <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span>${priceBlock(v)}</div>
       <div class="spec">${formatSpec(v.derivative || '')}</div>
-      <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi · ${daysBadge(v)}</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
+      <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi · ${isSpoticar(v) ? `<span class="badge-spoticar">SPOTiCAR</span>` : ''}${daysBadge(v)}</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
       <div class="reg">${v.registration || ''}</div>
       <div class="card-colour-peg">
         <span class="colour">${v.colour || ''}</span>
@@ -1484,6 +1498,20 @@ function listTableHtml(list) {
     + '<tbody>' + rows + '</tbody></table></div>';
 }
 
+function applySpoticarFlag(v, on) {
+  v.spoticar = !!on;
+  const flags = Array.isArray(v.status_flags) ? v.status_flags.filter(f => !/spoticar/i.test(String(f))) : [];
+  if (on) flags.push('SPOTiCAR');
+  v.status_flags = flags;
+}
+
+function isSpoticar(v) {
+  if (!v) return false;
+  if (v.spoticar === true || v.spoticar === 'true' || v.spoticar === 1) return true;
+  const flags = v.status_flags || [];
+  return flags.some(f => /spoticar/i.test(String(f)));
+}
+
 function renderList() {
   const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
   const fuel = (document.getElementById('filterFuel') || {}).value || '';
@@ -1494,6 +1522,10 @@ function renderList() {
   let list = vehicles.filter(v => {
     if (currentCat === 'All') return true;
     if (currentCat === 'Stock') return ON_SITE.includes(v.category || 'Stock');
+    if (currentCat === 'SPOTiCAR') {
+      // Still in stock (or any on-site), flagged SPOTiCAR
+      return ON_SITE.includes(v.category || 'Stock') && isSpoticar(v);
+    }
     return v.category === currentCat;
   });
   if (q) {
@@ -1568,8 +1600,14 @@ function statusPills(v) {
   const pills = [];
   const cat = v.category || 'Stock';
   if (cat && cat !== 'Stock') pills.push(`<span class="status-pill pill-cat">${cat}</span>`);
+  if (isSpoticar(v) && !(v.status_flags || []).some(f => /spoticar/i.test(String(f)))) {
+    pills.push(`<span class="status-pill badge-spoticar">SPOTiCAR</span>`);
+  }
   (v.status_flags || []).forEach(f => {
-    const cls = f === 'Reserved' || f === 'Deposit Taken' ? 'pill-reserved' : (f === 'New' ? 'pill-new' : 'pill-flag');
+    let cls = 'pill-flag';
+    if (f === 'Reserved' || f === 'Deposit Taken') cls = 'pill-reserved';
+    else if (f === 'New') cls = 'pill-new';
+    else if (/spoticar/i.test(String(f))) cls = 'badge-spoticar';
     pills.push(`<span class="status-pill ${cls}">${f}</span>`);
   });
   return pills.length ? `<div class="status-pills">${pills.join('')}</div>` : '';
@@ -1681,6 +1719,13 @@ function openDetail(id) {
                 <option value="">—</option>
                 ${['Ready','Prep','Photos','Display'].map(p => `<option value="${p}"${(v.prep_status||'')===p?' selected':''}>${p}</option>`).join('')}
               </select>
+            </div>
+            <div class="vd-ops-row">
+              <label>SPOTiCAR</label>
+              <label class="spoticar-toggle" style="display:flex;align-items:center;gap:0.5rem;font-weight:600;cursor:pointer">
+                <input type="checkbox" id="detailSpoticar" ${isSpoticar(v) ? 'checked' : ''}>
+                Certified used (Stellantis)
+              </label>
             </div>
             <div class="vd-ops-row">
               <label>Days tracked</label>
@@ -1933,6 +1978,7 @@ async function saveSalesDesk() {
   let category = (document.getElementById('detailCategory') || {}).value || (v.category || 'Stock');
 
   applyDeskStatus(v, status, { reservedBy, soldBy, category, prep });
+  applySpoticarFlag(v, !!(document.getElementById('detailSpoticar') || {}).checked);
 
   try { save(); } catch (_) {}
   const payload = {
@@ -1943,6 +1989,7 @@ async function saveSalesDesk() {
     reserved_at: v.reserved_at || '',
     sold_by: v.sold_by || '',
     status_flags: v.status_flags || [],
+    spoticar: isSpoticar(v),
   };
   if (v.sold_date) payload.sold_date = v.sold_date;
   const r = await sharedSave(payload);
@@ -2175,6 +2222,11 @@ async function loadFromVehiclesJson() {
       } else if (o.category === 'Sold' || o.category === 'Delivered') {
         v.category = o.category;
         if (o.sold_date) v.sold_date = o.sold_date;
+      if (o.spoticar != null) v.spoticar = o.spoticar;
+      if (o.spoticar === true || (Array.isArray(o.status_flags) && o.status_flags.some(f => /spoticar/i.test(String(f))))) {
+        v.spoticar = true;
+        if (!isSpoticar(v)) applySpoticarFlag(v, true);
+      }
       } else if (o.category) {
         v.category = o.category;
       } else if (prev.category && ['Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(prev.category) && v.category === 'Stock') {

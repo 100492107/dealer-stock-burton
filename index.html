@@ -1763,6 +1763,17 @@ function normalizeFeatureLabel(raw) {
   return f;
 }
 
+
+const FEATURE_PRESETS = [
+  'Heated Seats', 'Ventilated Seats', 'Massage Seats', 'Electric Seats', 'Memory Seats',
+  'Heated Steering Wheel', 'Full Leather', 'Part Leather', 'Nappa Leather', 'Leatherette',
+  'Panoramic Roof', 'Sunroof', 'Ambient Lighting',
+  'Apple CarPlay', 'Android Auto', 'Wireless Charging', 'Premium Audio', 'Head-Up Display',
+  'Adaptive Cruise Control', 'Parking Sensors', 'Reversing Camera', '360 Camera', 'Park Assist',
+  'Keyless Entry', 'Power Tailgate', 'LED Headlights', 'Matrix LED Headlights', 'Sat Nav',
+  'Climate Control', 'Blind Spot Monitor',
+];
+
 function normalizeFeaturesList(list) {
   const seen = new Set();
   const out = [];
@@ -1784,6 +1795,63 @@ function normalizeFeaturesList(list) {
     out.unshift(best);
   }
   return out;
+}
+
+
+function featureEditorHtml(v) {
+  const current = new Set(normalizeFeaturesList(v.key_features || []).map(f => f.toLowerCase()));
+  const boxes = FEATURE_PRESETS.map(f => {
+    const on = current.has(f.toLowerCase());
+    return `<label class="feat-check"><input type="checkbox" data-feat="${f.replace(/"/g,'&quot;')}" ${on ? 'checked' : ''}> ${f}</label>`;
+  }).join('');
+  const extras = normalizeFeaturesList(v.key_features || []).filter(f =>
+    !FEATURE_PRESETS.some(p => p.toLowerCase() === f.toLowerCase())
+  );
+  const extraBoxes = extras.map(f =>
+    `<label class="feat-check"><input type="checkbox" data-feat="${String(f).replace(/"/g,'&quot;')}" checked> ${String(f).replace(/</g,'&lt;')}</label>`
+  ).join('');
+  return `<div class="feat-editor no-print">
+    <div class="feat-editor-grid">${boxes}${extraBoxes}</div>
+    <div class="feat-editor-add">
+      <input type="text" id="featCustomInput" placeholder="Add custom feature…" maxlength="60">
+      <button type="button" class="btn btn-secondary" onclick="addCustomFeatureChip()">Add</button>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="saveFeatures()">Save features</button>
+  </div>`;
+}
+
+function addCustomFeatureChip() {
+  const input = document.getElementById('featCustomInput');
+  if (!input) return;
+  const val = (input.value || '').trim();
+  if (!val) return;
+  const grid = document.querySelector('.feat-editor-grid');
+  if (!grid) return;
+  const exists = [...grid.querySelectorAll('input[data-feat]')].some(i => i.dataset.feat.toLowerCase() === val.toLowerCase());
+  if (!exists) {
+    const lab = document.createElement('label');
+    lab.className = 'feat-check';
+    lab.innerHTML = `<input type="checkbox" data-feat="${val.replace(/"/g,'&quot;')}" checked> ${val.replace(/</g,'&lt;')}`;
+    grid.appendChild(lab);
+  }
+  input.value = '';
+}
+
+async function saveFeatures() {
+  if (!isManager()) { alert('Only managers can edit features.'); return; }
+  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
+  if (!v) return;
+  const checks = document.querySelectorAll('.feat-editor input[data-feat]');
+  const list = [];
+  checks.forEach(ch => {
+    if (ch.checked) list.push(ch.dataset.feat);
+  });
+  v.key_features = normalizeFeaturesList(list);
+  try { save(); } catch (_) {}
+  const r = await sharedSave({ registration: v.registration, key_features: v.key_features });
+  if (!r.ok) alert('Saved on this device only — shared save failed.');
+  openDetail(currentId);
+  renderList();
 }
 
 function featureChips(v, limit) {
@@ -2051,8 +2119,16 @@ function openDetail(id) {
     </div>`;
 
   const features = (v.key_features && v.key_features.length)
-    ? `<div class="vd-section vd-features-section"><h3 class="vd-section-title">Key features <span class="vd-feat-count">${(v.key_features||[]).length}</span></h3>${featureChips(v, -1)}</div>`
-    : '';
+    ? `<div class="vd-section vd-features-section"><h3 class="vd-section-title">Key features <span class="vd-feat-count">${(normalizeFeaturesList(v.key_features||[])).length}</span></h3>
+      ${featureChips(v, -1)}
+      ${typeof isManager === 'function' && isManager() ? featureEditorHtml(v) : ''}
+    </div>`
+    : (typeof isManager === 'function' && isManager()
+      ? `<div class="vd-section vd-features-section"><h3 class="vd-section-title">Key features</h3>
+          <p class="vd-feat-empty">No features scraped yet — tick any that apply.</p>
+          ${featureEditorHtml(v)}
+        </div>`
+      : '');
 
   const svc = (v.service_history || '').trim();
   let svcBlock = '';

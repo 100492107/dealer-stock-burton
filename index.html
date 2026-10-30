@@ -865,6 +865,14 @@ body.role-sales .status-pill.status-delivered {
   opacity: 0.45;
 }
 
+
+.vd-readonly .vd-ops-row { margin-bottom: 0.65rem; }
+.vd-ro-value {
+  font-weight: 600; color: #0f172a; font-size: 0.95rem;
+  padding: 0.15rem 0;
+}
+body.role-sales .vd-note-form { display: none !important; }
+
 </style>
 
 </head>
@@ -1895,12 +1903,28 @@ function openDetail(id) {
             else if (cat === 'Delivered') cur = 'delivered';
             else if (res) cur = 'reserved';
             const labels = {available:'Available',reserved:'Reserved',sold:'Sold',delivered:'Delivered'};
+            const mgr = typeof isManager === 'function' && isManager();
+            if (!mgr) {
+              // Read-only for sales — values only, no controls
+              const who = (v.reserved_by || '').trim();
+              const soldBy = (v.sold_by || '').trim();
+              const prep = (v.prep_status || '').trim();
+              const days = (() => { const n = daysInStock(v); return n == null ? '—' : n + ' days'; })();
+              return `<div class="vd-readonly">
+                <div class="vd-ops-row"><label>Status</label><div class="vd-ro-value"><span class="status-pill status-${cur} is-active" style="pointer-events:none">${labels[cur]}</span></div></div>
+                ${who ? `<div class="vd-ops-row"><label>Who's on it</label><div class="vd-ro-value">${who.replace(/</g,'')}</div></div>` : ''}
+                ${soldBy ? `<div class="vd-ops-row"><label>Sold by</label><div class="vd-ro-value">${soldBy.replace(/</g,'')}</div></div>` : ''}
+                <div class="vd-ops-row"><label>Category / type</label><div class="vd-ro-value">${(v.category || 'Stock').replace(/</g,'')}</div></div>
+                <div class="vd-ops-row"><label>Prep status</label><div class="vd-ro-value">${prep || '—'}</div></div>
+                <div class="vd-ops-row"><label>SPOTiCAR</label><div class="vd-ro-value">${isSpoticar(v) ? 'Yes — certified used' : 'No'}</div></div>
+                <div class="vd-ops-row"><label>Days tracked</label><div class="vd-ro-value">${days}</div></div>
+              </div>`;
+            }
             const btns = ['available','reserved','sold','delivered'].map(s =>
               `<button type="button" class="status-pill status-${s}${cur===s?' is-active':''}" onclick="event.preventDefault();setVehicleStatus('${s}')">${labels[s]}</button>`
             ).join('');
             return `<div class="status-pills" role="group" aria-label="Vehicle status">${btns}</div>
-            <input type="hidden" id="detailStatus" value="${cur}">`;
-          })()}
+            <input type="hidden" id="detailStatus" value="${cur}">
           <div class="vd-ops">
             <div class="vd-ops-row" id="rowReservedBy" style="${((v.status_flags||[]).includes('Reserved')||(v.reserved_by||'').trim()) && !['Sold','Delivered'].includes(v.category||'') ? '' : 'display:none'}">
               <label>Who's on it</label>
@@ -1939,10 +1963,11 @@ function openDetail(id) {
             <div class="vd-ops-actions">
               <button type="button" class="btn btn-primary" onclick="saveSalesDesk()">Save status</button>
             </div>
-          </div>
+          </div>`;
+          })()}
         </div>
         <div class="vd-actions-desktop no-print">
-          <button type="button" class="btn btn-secondary" onclick="editCurrent()">Edit details</button>
+          <button type="button" class="btn btn-secondary mgr-only" onclick="editCurrent()">Edit details</button>
           <button type="button" class="btn btn-primary" onclick="printStockCard()">Print / Pentagon</button>
         </div>
       </div>
@@ -1962,8 +1987,10 @@ function openDetail(id) {
             <div class="vd-peg-field">
               <dt>PEG number</dt>
               <dd class="vd-peg-dd">
-                <input type="text" id="detailPeg" class="vd-peg-input" value="${String(v.dealer_peg || '').replace(/"/g,'&quot;')}" placeholder="Enter PEG…" inputmode="numeric" autocomplete="off">
-                <button type="button" class="btn btn-secondary btn-peg-save" onclick="savePegNumber()">Save</button>
+                ${typeof isManager === 'function' && isManager()
+                  ? `<input type="text" id="detailPeg" class="vd-peg-input" value="${String(v.dealer_peg || '').replace(/"/g,'&quot;')}" placeholder="Enter PEG…" inputmode="numeric" autocomplete="off">
+                <button type="button" class="btn btn-secondary btn-peg-save" onclick="savePegNumber()">Save</button>`
+                  : `<span class="vd-ro-value">${(v.dealer_peg || '—')}</span>`}
               </dd>
             </div>
             <div><dt>Category</dt><dd>${v.category || 'Stock'}</dd></div>
@@ -1974,15 +2001,15 @@ function openDetail(id) {
         <div class="vd-section vd-notes">
           <h3 class="vd-section-title">Sales notes</h3>
           <div class="vd-note-list" id="notesList">${notes}</div>
-          <div class="vd-note-form no-print">
+          ${typeof isManager === 'function' && isManager() ? `<div class="vd-note-form no-print">
             <textarea id="newNoteText" placeholder="Add a sales note…" rows="2"></textarea>
             <button type="button" class="btn btn-primary" onclick="addNote()">Add note</button>
-          </div>
+          </div>` : ''}
         </div>
         ${pentagon ? `<div class="vd-section">${pentagon}</div>` : ''}
       </div>
       <div class="vd-actions-mobile no-print">
-        <button type="button" class="btn btn-primary" onclick="editCurrent()">Edit details</button>
+        <button type="button" class="btn btn-primary mgr-only" onclick="editCurrent()">Edit details</button>
         <button type="button" class="btn btn-secondary" onclick="printStockCard()">Print / Pentagon</button>
       </div>
     </div>`;
@@ -1993,6 +2020,8 @@ function openDetail(id) {
 function closeModal() { document.getElementById('detailModal').style.display = 'none'; currentId = null; }
 
 async function addNote() {
+  if (!isManager()) { alert('Only managers can add sales notes.'); return; }
+
   const v = vehicles.find(x => x.id === currentId);
   if (!v) return;
   const text = (document.getElementById('newNoteText').value || '').trim();
@@ -2176,7 +2205,23 @@ document.querySelectorAll('.overlay').forEach(o => {
 });
 
 
+
+async function savePegNumber() {
+  if (!isManager()) { alert('Only managers can set PEG numbers.'); return; }
+  const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
+  if (!v) return;
+  const input = document.getElementById('detailPeg');
+  const peg = (input && input.value || '').trim();
+  v.dealer_peg = peg;
+  try { save(); } catch (_) {}
+  const r = await sharedSave({ registration: v.registration, dealer_peg: peg, peg_number: peg });
+  if (!r.ok) alert('Saved on this device only — shared save failed.');
+  else if (typeof openDetail === 'function') openDetail(v.id || v.registration);
+}
+
 async function saveSalesDesk() {
+  if (!isManager()) { alert('Only managers can update the sales desk.'); return; }
+
   const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
   if (!v) return;
   const status = (document.getElementById('detailStatus') || {}).value || 'available';

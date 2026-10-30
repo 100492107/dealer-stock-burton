@@ -794,10 +794,102 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   background: #1e3a5f; color: #fff; border-color: #1e3a5f;
 }
 
+
+#loginGate {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #0f2744 0%, #1e3a5f 45%, #152a45 100%);
+  padding: 1.25rem;
+}
+#loginGate[hidden] { display: none !important; }
+.login-card {
+  width: 100%; max-width: 400px;
+  background: #fff; border-radius: 16px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: 0 20px 50px rgba(0,0,0,.25);
+}
+.login-card .login-logo {
+  display: flex; align-items: center; gap: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+.login-card .login-logo img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.login-card h1 { font-size: 1.25rem; margin: 0; color: #0f2744; }
+.login-card .login-sub { color: #64748b; font-size: 0.88rem; margin: 0.35rem 0 1.25rem; }
+.login-card label { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.login-card input[type=text],
+.login-card input[type=password] {
+  width: 100%; padding: 0.7rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 10px;
+  font-size: 1rem; margin-bottom: 0.9rem; font-family: inherit;
+  box-sizing: border-box;
+}
+.login-card input:focus { outline: 2px solid #1e3a5f; border-color: #1e3a5f; }
+.login-card .login-err {
+  background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+  border-radius: 8px; padding: 0.55rem 0.75rem; font-size: 0.85rem; margin-bottom: 0.75rem;
+  display: none;
+}
+.login-card .login-err.show { display: block; }
+.login-card .btn-login {
+  width: 100%; padding: 0.8rem; border: none; border-radius: 10px;
+  background: #1e3a5f; color: #fff; font-weight: 700; font-size: 1rem;
+  cursor: pointer; font-family: inherit;
+}
+.login-card .btn-login:hover { background: #152a45; }
+.login-card .btn-login:disabled { opacity: 0.6; cursor: wait; }
+.login-roles {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;
+}
+.login-roles button {
+  border: 2px solid #e2e8f0; background: #f8fafc; border-radius: 10px;
+  padding: 0.65rem 0.4rem; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+  font-family: inherit; color: #334155;
+}
+.login-roles button.active {
+  border-color: #1e3a5f; background: #e8eef6; color: #0f2744;
+}
+.user-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.78rem; font-weight: 600; color: #334155;
+  background: #f1f5f9; border-radius: 999px; padding: 0.25rem 0.65rem;
+}
+.user-chip .role-tag {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;
+  background: #1e3a5f; color: #fff; border-radius: 999px; padding: 0.1rem 0.4rem;
+}
+.user-chip .role-tag.sales { background: #047857; }
+body.role-sales .mgr-only { display: none !important; }
+
+
+body.role-sales .status-pill.status-sold,
+body.role-sales .status-pill.status-delivered {
+  opacity: 0.45;
+}
+
 </style>
 
 </head>
 <body>
+
+<div id="loginGate" hidden>
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <div class="login-logo">
+      <img src="eu20f.jpg" alt="" onerror="this.style.display='none'">
+      <h1>Dealer Stock Burton</h1>
+    </div>
+    <p class="login-sub">Sign in to view and update yard stock</p>
+    <div class="login-roles" role="group" aria-label="Role">
+      <button type="button" class="active" data-preset="sales" id="presetSales">Sales exec</button>
+      <button type="button" data-preset="manager" id="presetManager">Manager</button>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <label for="loginUser">Username</label>
+    <input type="text" id="loginUser" name="username" autocomplete="username" required placeholder="sales or manager">
+    <label for="loginPass">Password</label>
+    <input type="password" id="loginPass" name="password" autocomplete="current-password" required placeholder="Password">
+    <button type="submit" class="btn-login" id="loginBtn">Sign in</button>
+  </form>
+</div>
+
 
 <nav class="top-nav">
   <button type="button" class="brand" onclick="goHome()" title="Back to all stock">
@@ -817,10 +909,12 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
     <button data-cat="All">All</button>
   </div>
   <div class="nav-right">
+    <span class="user-chip" id="userChip" hidden><span id="userChipName">—</span><span class="role-tag" id="userChipRole">—</span></span>
+    <button type="button" class="btn-ghost" id="btnLogout" onclick="logout()" title="Sign out" hidden>Sign out</button>
     <span class="sync-status" id="syncStatus">Loading…</span>
-    <button type="button" class="btn-ghost" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ <span class="hide-xs">Sync </span>stock</button>
+    <button type="button" class="btn-ghost mgr-only" onclick="syncStockNow()" title="Pull from Pentagon — moves sold cars">↻ <span class="hide-xs">Sync </span>stock</button>
     <button type="button" class="btn-ghost" onclick="location.reload()" title="Reload page">↻ Refresh</button>
-    <button type="button" onclick="openForm()">+ Add vehicle</button>
+    <button type="button" onclick="openForm()" class="mgr-only">+ Add vehicle</button>
   </div>
 
 </nav>
@@ -848,7 +942,7 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
       <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…" onkeydown="if(event.key==='Enter'){renderList()}">
       <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
       <button type="button" class="btn-clear-search" id="clearSearchBtn" onclick="goHome()" style="display:none">✕ All stock</button>
-      <button type="button" class="btn btn-secondary" onclick="exportCsv()" title="Export visible stock to CSV">Export CSV</button>
+      <button type="button" class="btn btn-secondary" onclick="exportCsv()" class="mgr-only" title="Export visible stock to CSV" class="mgr-only">Export CSV</button>
     </div>
   </div>
 
@@ -908,7 +1002,7 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
       <div class="modal-actions no-print">
         <button type="button" class="btn btn-secondary" onclick="printStockCard()" title="Print stock card" title="Open Pentagon print stock card">🖨 Stock card</button>
         <button type="button" class="btn btn-primary btn-lg" onclick="editCurrent()">✏️ Edit vehicle</button>
-        <button type="button" class="btn btn-danger" onclick="deleteCurrent()">Remove</button>
+        <button type="button" class="btn btn-danger" onclick="deleteCurrent()" class="mgr-only">Remove</button>
         <button type="button" class="modal-close" onclick="closeModal()" title="Close" aria-label="Close">&times;</button>
       </div>
     </div>
@@ -996,6 +1090,115 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
 </div>
 
 <script>
+
+/* —— Auth (manager / sales) —— */
+const AUTH_KEY = 'dsb_auth';
+let currentUser = null; // { role, name, username, token, exp }
+
+function loadAuth() {
+  try {
+    const raw = sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data.exp && Date.now() > data.exp) {
+      sessionStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(AUTH_KEY);
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+
+function saveAuth(data, remember) {
+  currentUser = data;
+  const raw = JSON.stringify(data);
+  sessionStorage.setItem(AUTH_KEY, raw);
+  if (remember) localStorage.setItem(AUTH_KEY, raw);
+  else localStorage.removeItem(AUTH_KEY);
+}
+
+function clearAuth() {
+  currentUser = null;
+  sessionStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_KEY);
+}
+
+function isManager() {
+  return currentUser && currentUser.role === 'manager';
+}
+
+function isLoggedIn() {
+  return !!(currentUser && currentUser.token);
+}
+
+function applyRoleUI() {
+  document.body.classList.toggle('role-sales', currentUser && currentUser.role === 'sales');
+  document.body.classList.toggle('role-manager', currentUser && currentUser.role === 'manager');
+  const chip = document.getElementById('userChip');
+  const logoutBtn = document.getElementById('btnLogout');
+  if (chip && currentUser) {
+    chip.hidden = false;
+    const n = document.getElementById('userChipName');
+    const r = document.getElementById('userChipRole');
+    if (n) n.textContent = currentUser.name || currentUser.username || 'User';
+    if (r) {
+      r.textContent = currentUser.role === 'manager' ? 'Manager' : 'Sales';
+      r.classList.toggle('sales', currentUser.role === 'sales');
+    }
+  }
+  if (logoutBtn) logoutBtn.hidden = !isLoggedIn();
+}
+
+function showLogin() {
+  const gate = document.getElementById('loginGate');
+  if (gate) gate.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function hideLogin() {
+  const gate = document.getElementById('loginGate');
+  if (gate) gate.hidden = true;
+  document.body.style.overflow = '';
+}
+
+function logout() {
+  clearAuth();
+  showLogin();
+  applyRoleUI();
+}
+
+async function doLogin(username, password) {
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Sign in failed');
+  }
+  saveAuth({
+    role: data.role,
+    name: data.name,
+    username: data.username,
+    token: data.token,
+    exp: data.exp,
+  }, true);
+  return data;
+}
+
+function requireAuthForStatus(status) {
+  // Sales can set available / reserved; managers also sold / delivered
+  if (status === 'sold' || status === 'delivered') {
+    if (!isManager()) {
+      alert('Only managers can mark vehicles as Sold or Delivered.');
+      return false;
+    }
+  }
+  return true;
+}
+
+
 
 const FLAGS = ['Pre-Reg','Awaiting Prep','Bodyshop','Workshop','Lower Price','Special Offer','On Loan','Other','Auction','Deposit Taken'];
 const IMPORTED_STOCK = [];
@@ -2056,6 +2259,7 @@ function applyDeskStatus(v, status, opts) {
 }
 
 async function setVehicleStatus(status) {
+  if (!requireAuthForStatus(status)) return;
   const v = vehicles.find(x => x.id === currentId || x.registration === currentId);
   if (!v) return;
   const hid = document.getElementById('detailStatus');
@@ -2403,6 +2607,74 @@ function startAutoRefresh() {
   startReliableSync();
   renderList();
 })();
+
+
+async function initAuthGate() {
+  currentUser = loadAuth();
+  const form = document.getElementById('loginForm');
+  const errEl = document.getElementById('loginErr');
+  const presetSales = document.getElementById('presetSales');
+  const presetManager = document.getElementById('presetManager');
+  const userInput = document.getElementById('loginUser');
+  if (presetSales) presetSales.onclick = () => {
+    presetSales.classList.add('active');
+    if (presetManager) presetManager.classList.remove('active');
+    if (userInput && !userInput.value) userInput.value = 'sales';
+  };
+  if (presetManager) presetManager.onclick = () => {
+    presetManager.classList.add('active');
+    if (presetSales) presetSales.classList.remove('active');
+    if (userInput && !userInput.value) userInput.value = 'manager';
+  };
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = (document.getElementById('loginUser') || {}).value || '';
+      const p = (document.getElementById('loginPass') || {}).value || '';
+      const btn = document.getElementById('loginBtn');
+      if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
+      if (btn) btn.disabled = true;
+      try {
+        await doLogin(u.trim(), p);
+        hideLogin();
+        applyRoleUI();
+        if (typeof loadFromVehiclesJson === 'function') {
+          await loadFromVehiclesJson();
+          if (typeof renderList === 'function') renderList();
+        }
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || 'Sign in failed';
+          errEl.classList.add('show');
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+  if (!isLoggedIn()) {
+    showLogin();
+    applyRoleUI();
+  } else {
+    hideLogin();
+    applyRoleUI();
+    // optional: verify token still valid
+    try {
+      const res = await fetch('/api/login', {
+        headers: { Authorization: 'Bearer ' + currentUser.token },
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        clearAuth();
+        showLogin();
+      }
+    } catch (_) {}
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initAuthGate();
+});
 
 </script>
 </body>

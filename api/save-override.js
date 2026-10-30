@@ -1,5 +1,5 @@
 /**
- * Shared team edits — notes, service history, flags, PEG, reserved, prep, sold by.
+ * Shared team edits — notes, service history, flags, PEG, reserved, prep, sold by, SPOTiCAR.
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -73,6 +73,7 @@ module.exports = async function handler(req, res) {
   if (body.reserved_at !== undefined) next.reserved_at = body.reserved_at;
   if (body.sold_by !== undefined) next.sold_by = body.sold_by;
   if (body.sold_date !== undefined) next.sold_date = body.sold_date;
+  if (body.spoticar !== undefined) next.spoticar = !!body.spoticar;
   if (body.notes !== undefined) next.notes = body.notes;
   if (body.add_note) {
     const notes = Array.isArray(next.notes) ? next.notes.slice() : [];
@@ -82,6 +83,11 @@ module.exports = async function handler(req, res) {
       by: body.by || 'team',
     });
     next.notes = notes;
+  }
+  if (body.spoticar !== undefined) {
+    const flags = Array.isArray(next.status_flags) ? next.status_flags.filter(f => !/spoticar/i.test(String(f))) : [];
+    if (body.spoticar) flags.push('SPOTiCAR');
+    next.status_flags = flags;
   }
   next.updatedAt = new Date().toISOString();
   overrides[reg] = next;

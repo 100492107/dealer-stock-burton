@@ -1001,8 +1001,8 @@ body.role-sales .status-pill.status-delivered {
       <h2 id="detailTitle">Vehicle</h2>
       <div class="modal-actions no-print">
         <button type="button" class="btn btn-secondary" onclick="printStockCard()" title="Print stock card" title="Open Pentagon print stock card">🖨 Stock card</button>
-        <button type="button" class="btn btn-primary btn-lg" onclick="editCurrent()">✏️ Edit vehicle</button>
-        <button type="button" class="btn btn-danger" onclick="deleteCurrent()" class="mgr-only">Remove</button>
+        <button type="button" class="btn btn-primary btn-lg mgr-only" onclick="editCurrent()">✏️ Edit vehicle</button>
+        <button type="button" class="btn btn-danger mgr-only" onclick="deleteCurrent()">Remove</button>
         <button type="button" class="modal-close" onclick="closeModal()" title="Close" aria-label="Close">&times;</button>
       </div>
     </div>
@@ -1288,6 +1288,8 @@ function markSyncOk() {
 }
 
 async function syncStockNow(opts) {
+  if (!isManager()) { alert('Only managers can sync stock from Pentagon.'); return; }
+
   opts = opts || {};
   const silent = !!opts.silent;
   if (!location.protocol.startsWith('http')) {
@@ -2005,6 +2007,7 @@ async function addNote() {
 }
 
 function deleteCurrent() {
+  if (!isManager()) { alert('Only managers can remove vehicles.'); return; }
   if (!currentId || !confirm('Remove this vehicle from your list?')) return;
   vehicles = vehicles.filter(v => v.id !== currentId);
   save();
@@ -2057,6 +2060,7 @@ function printStockCard() {
 
 
 function editCurrent() {
+  if (!isManager()) { alert('Only managers can edit the full vehicle record.'); return; }
   const v = vehicles.find(x => x.id === currentId);
   if (!v) return;
   closeModal();
@@ -2064,6 +2068,7 @@ function editCurrent() {
 }
 
 function openForm(v) {
+  if (!isManager()) { alert('Only managers can add or fully edit vehicles.'); return; }
   document.getElementById('formTitle').textContent = v ? 'Edit Vehicle' : 'Add Vehicle';
   document.getElementById('f_id').value = v ? v.id : '';
   const fields = ['registration','make','model','derivative','mileage','model_year','doors','transmission','fuel','body_type','colour','image_url','retail_price','bring_into_stock_date','category','service_history','service_history_notes','special_offer'];

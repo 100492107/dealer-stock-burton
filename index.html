@@ -1909,7 +1909,7 @@ function openDetail(id) {
               const who = (v.reserved_by || '').trim();
               const soldBy = (v.sold_by || '').trim();
               const prep = (v.prep_status || '').trim();
-              const days = (() => { const n = daysInStock(v); return n == null ? '—' : n + ' days'; })();
+              const days = (() => { const n = daysInStock(v); return n == null ? '—' : (n === 1 ? '1 day' : n + ' days'); })();
               return `<div class="vd-readonly">
                 <div class="vd-ops-row"><label>Status</label><div class="vd-ro-value"><span class="status-pill status-${cur} is-active" style="pointer-events:none">${labels[cur]}</span></div></div>
                 ${who ? `<div class="vd-ops-row"><label>Who's on it</label><div class="vd-ro-value">${who.replace(/</g,'')}</div></div>` : ''}
@@ -1958,7 +1958,7 @@ function openDetail(id) {
             </div>
             <div class="vd-ops-row">
               <label>Days tracked</label>
-              <div style="font-weight:700">${(() => { const n = daysInStock(v); return n == null ? '—' : n + ' days'; })()}</div>
+              <div style="font-weight:700">${(() => { const n = daysInStock(v); return n == null ? '—' : (n === 1 ? '1 day' : n + ' days'); })()}</div>
             </div>
             <div class="vd-ops-actions">
               <button type="button" class="btn btn-primary" onclick="saveSalesDesk()">Save status</button>
@@ -2247,6 +2247,14 @@ async function saveSalesDesk() {
   if (v.sold_date) payload.sold_date = v.sold_date;
   const r = await sharedSave(payload);
   if (!r.ok) alert('Saved on this device only — shared save failed: ' + (r.error || ''));
+  else {
+    const btn = document.querySelector('.vd-sales-desk .vd-ops-actions .btn');
+    if (btn) {
+      const prev = btn.textContent;
+      btn.textContent = isSpoticar(v) ? 'Saved · SPOTiCAR on' : 'Saved';
+      setTimeout(() => { btn.textContent = prev; }, 1500);
+    }
+  }
   openDetail(currentId);
   renderList();
 }

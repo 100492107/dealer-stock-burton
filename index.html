@@ -873,6 +873,94 @@ body.role-sales .status-pill.status-delivered {
 }
 body.role-sales .vd-note-form { display: none !important; }
 
+
+/* Sales desk status — segmented control (not tag pills) */
+.status-seg-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+@media (max-width: 520px) {
+  .status-seg-group { grid-template-columns: 1fr 1fr; }
+}
+.status-seg {
+  appearance: none;
+  border: none;
+  border-right: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  padding: 0.7rem 0.35rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  transition: background .15s, color .15s;
+  line-height: 1.2;
+}
+.status-seg:last-child { border-right: none; }
+@media (max-width: 520px) {
+  .status-seg:nth-child(2) { border-right: none; }
+  .status-seg:nth-child(1),
+  .status-seg:nth-child(2) { border-bottom: 1px solid #e2e8f0; }
+}
+.status-seg:hover:not(.is-on) {
+  background: #f8fafc;
+  color: #0f172a;
+}
+.status-seg:focus-visible {
+  outline: 2px solid #1e3a5f;
+  outline-offset: -2px;
+  z-index: 1;
+}
+.status-seg-icon {
+  font-size: 0.95rem;
+  opacity: 0.7;
+  font-weight: 700;
+}
+.status-seg.is-on .status-seg-icon { opacity: 1; }
+.status-seg-label { letter-spacing: 0.01em; }
+
+.status-seg-available.is-on {
+  background: #ecfdf5;
+  color: #047857;
+}
+.status-seg-reserved.is-on {
+  background: #fffbeb;
+  color: #b45309;
+}
+.status-seg-sold.is-on {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.status-seg-delivered.is-on {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Readonly status chip for sales view */
+.vd-readonly .status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.vd-readonly .status-chip.available { background: #ecfdf5; color: #047857; }
+.vd-readonly .status-chip.reserved { background: #fffbeb; color: #b45309; }
+.vd-readonly .status-chip.sold { background: #fef2f2; color: #b91c1c; }
+.vd-readonly .status-chip.delivered { background: #eff6ff; color: #1d4ed8; }
+
 </style>
 
 </head>
@@ -1911,7 +1999,7 @@ function openDetail(id) {
               const prep = (v.prep_status || '').trim();
               const days = (() => { const n = daysInStock(v); return n == null ? '—' : (n === 1 ? '1 day' : n + ' days'); })();
               return `<div class="vd-readonly">
-                <div class="vd-ops-row"><label>Status</label><div class="vd-ro-value"><span class="status-pill status-${cur} is-active" style="pointer-events:none">${labels[cur]}</span></div></div>
+                <div class="vd-ops-row"><label>Status</label><div class="vd-ro-value"><span class="status-chip ${cur}">${labels[cur]}</span></div></div>
                 ${who ? `<div class="vd-ops-row"><label>Who's on it</label><div class="vd-ro-value">${who.replace(/</g,'')}</div></div>` : ''}
                 ${soldBy ? `<div class="vd-ops-row"><label>Sold by</label><div class="vd-ro-value">${soldBy.replace(/</g,'')}</div></div>` : ''}
                 <div class="vd-ops-row"><label>Category / type</label><div class="vd-ro-value">${(v.category || 'Stock').replace(/</g,'')}</div></div>
@@ -1920,10 +2008,11 @@ function openDetail(id) {
                 <div class="vd-ops-row"><label>Days tracked</label><div class="vd-ro-value">${days}</div></div>
               </div>`;
             }
+            const icons = {available:'✓', reserved:'◎', sold:'£', delivered:'→'};
             const btns = ['available','reserved','sold','delivered'].map(s =>
-              `<button type="button" class="status-pill status-${s}${cur===s?' is-active':''}" onclick="event.preventDefault();setVehicleStatus('${s}')">${labels[s]}</button>`
+              `<button type="button" role="radio" aria-checked="${cur===s}" class="status-seg status-seg-${s}${cur===s?' is-on':''}" onclick="event.preventDefault();setVehicleStatus('${s}')"><span class="status-seg-icon" aria-hidden="true">${icons[s]}</span><span class="status-seg-label">${labels[s]}</span></button>`
             ).join('');
-            return `<div class="status-pills" role="group" aria-label="Vehicle status">${btns}</div>
+            return `<div class="status-seg-group" role="radiogroup" aria-label="Vehicle status">${btns}</div>
             <input type="hidden" id="detailStatus" value="${cur}">
           <div class="vd-ops">
             <div class="vd-ops-row" id="rowReservedBy" style="${((v.status_flags||[]).includes('Reserved')||(v.reserved_by||'').trim()) && !['Sold','Delivered'].includes(v.category||'') ? '' : 'display:none'}">
@@ -2323,8 +2412,10 @@ async function setVehicleStatus(status) {
   const hid = document.getElementById('detailStatus');
   if (hid) hid.value = status;
   // Update pill UI immediately
-  document.querySelectorAll('.status-pill').forEach(btn => {
-    btn.classList.toggle('is-active', btn.classList.contains('status-' + status));
+  document.querySelectorAll('.status-seg').forEach(btn => {
+    const on = btn.classList.contains('status-seg-' + status);
+    btn.classList.toggle('is-on', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
   });
   const rowR = document.getElementById('rowReservedBy');
   const rowS = document.getElementById('rowSoldBy');

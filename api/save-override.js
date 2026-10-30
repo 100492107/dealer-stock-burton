@@ -1,5 +1,5 @@
 /**
- * Shared team edits — notes, service history, flags, PEG, reserved, prep, sold by, SPOTiCAR.
+ * Shared team edits — notes, service history, flags, PEG, reserved, prep, sold by, SPOTiCAR, features.
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -74,6 +74,7 @@ module.exports = async function handler(req, res) {
   if (body.sold_by !== undefined) next.sold_by = body.sold_by;
   if (body.sold_date !== undefined) next.sold_date = body.sold_date;
   if (body.spoticar !== undefined) next.spoticar = !!body.spoticar;
+  if (body.key_features !== undefined) next.key_features = Array.isArray(body.key_features) ? body.key_features : [];
   if (body.notes !== undefined) next.notes = body.notes;
   if (body.add_note) {
     const notes = Array.isArray(next.notes) ? next.notes.slice() : [];

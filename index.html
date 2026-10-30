@@ -1076,6 +1076,81 @@ body.role-sales .vd-note-form { display: none !important; }
   padding-top: 0.95rem;
 }
 
+
+.feat-editor {
+  margin-top: 1rem;
+  padding: 1rem 1.1rem 1.15rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+.feat-editor-hint {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+.feat-group { margin-bottom: 0.85rem; }
+.feat-group-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 0.4rem;
+}
+.feat-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.feat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s, border-color .12s, color .12s;
+  position: relative;
+}
+.feat-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.feat-toggle:hover { border-color: #cbd5e1; color: #334155; }
+.feat-toggle.is-on {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+.feat-editor-add {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.feat-editor-add input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: #fff;
+}
+.feat-save-btn { width: 100%; }
+.vd-feat-empty { font-size: 0.85rem; color: #64748b; margin: 0 0 0.5rem; }
+
 </style>
 
 </head>
@@ -1764,15 +1839,14 @@ function normalizeFeatureLabel(raw) {
 }
 
 
-const FEATURE_PRESETS = [
-  'Heated Seats', 'Ventilated Seats', 'Massage Seats', 'Electric Seats', 'Memory Seats',
-  'Heated Steering Wheel', 'Full Leather', 'Part Leather', 'Nappa Leather', 'Leatherette',
-  'Panoramic Roof', 'Sunroof', 'Ambient Lighting',
-  'Apple CarPlay', 'Android Auto', 'Wireless Charging', 'Premium Audio', 'Head-Up Display',
-  'Adaptive Cruise Control', 'Parking Sensors', 'Reversing Camera', '360 Camera', 'Park Assist',
-  'Keyless Entry', 'Power Tailgate', 'LED Headlights', 'Matrix LED Headlights', 'Sat Nav',
-  'Climate Control', 'Blind Spot Monitor',
+const FEATURE_GROUPS = [
+  { title: 'Seats & comfort', items: ['Heated Seats', 'Ventilated Seats', 'Massage Seats', 'Electric Seats', 'Memory Seats', 'Heated Steering Wheel', 'Climate Control'] },
+  { title: 'Upholstery', items: ['Full Leather', 'Part Leather', 'Nappa Leather', 'Leatherette', 'Alcantara'] },
+  { title: 'Roof & lighting', items: ['Panoramic Roof', 'Sunroof', 'Ambient Lighting', 'LED Headlights', 'Matrix LED Headlights'] },
+  { title: 'Tech', items: ['Apple CarPlay', 'Android Auto', 'Wireless Charging', 'Premium Audio', 'Head-Up Display', 'Sat Nav'] },
+  { title: 'Driver assist', items: ['Adaptive Cruise Control', 'Parking Sensors', 'Reversing Camera', '360 Camera', 'Park Assist', 'Blind Spot Monitor', 'Keyless Entry', 'Power Tailgate'] },
 ];
+const FEATURE_PRESETS = FEATURE_GROUPS.flatMap(g => g.items);
 
 function normalizeFeaturesList(list) {
   const seen = new Set();
@@ -1800,23 +1874,30 @@ function normalizeFeaturesList(list) {
 
 function featureEditorHtml(v) {
   const current = new Set(normalizeFeaturesList(v.key_features || []).map(f => f.toLowerCase()));
-  const boxes = FEATURE_PRESETS.map(f => {
-    const on = current.has(f.toLowerCase());
-    return `<label class="feat-check"><input type="checkbox" data-feat="${f.replace(/"/g,'&quot;')}" ${on ? 'checked' : ''}> ${f}</label>`;
+  const groups = FEATURE_GROUPS.map(g => {
+    const items = g.items.map(f => {
+      const on = current.has(f.toLowerCase());
+      return `<label class="feat-toggle${on ? ' is-on' : ''}">
+        <input type="checkbox" data-feat="${f.replace(/"/g,'&quot;')}" ${on ? 'checked' : ''} onchange="this.closest('.feat-toggle').classList.toggle('is-on', this.checked)">
+        <span>${f}</span>
+      </label>`;
+    }).join('');
+    return `<div class="feat-group"><div class="feat-group-title">${g.title}</div><div class="feat-group-items">${items}</div></div>`;
   }).join('');
   const extras = normalizeFeaturesList(v.key_features || []).filter(f =>
     !FEATURE_PRESETS.some(p => p.toLowerCase() === f.toLowerCase())
   );
-  const extraBoxes = extras.map(f =>
-    `<label class="feat-check"><input type="checkbox" data-feat="${String(f).replace(/"/g,'&quot;')}" checked> ${String(f).replace(/</g,'&lt;')}</label>`
-  ).join('');
+  const extraBlock = extras.length ? `<div class="feat-group"><div class="feat-group-title">From listing</div><div class="feat-group-items">${extras.map(f =>
+    `<label class="feat-toggle is-on"><input type="checkbox" data-feat="${String(f).replace(/"/g,'&quot;')}" checked onchange="this.closest('.feat-toggle').classList.toggle('is-on', this.checked)"><span>${String(f).replace(/</g,'&lt;')}</span></label>`
+  ).join('')}</div></div>` : '';
   return `<div class="feat-editor no-print">
-    <div class="feat-editor-grid">${boxes}${extraBoxes}</div>
+    <p class="feat-editor-hint">Tick what the car has. Your choices override the website scrape and stay after sync.</p>
+    ${groups}${extraBlock}
     <div class="feat-editor-add">
-      <input type="text" id="featCustomInput" placeholder="Add custom feature…" maxlength="60">
+      <input type="text" id="featCustomInput" placeholder="Add a custom feature…" maxlength="60">
       <button type="button" class="btn btn-secondary" onclick="addCustomFeatureChip()">Add</button>
     </div>
-    <button type="button" class="btn btn-primary" onclick="saveFeatures()">Save features</button>
+    <button type="button" class="btn btn-primary feat-save-btn" onclick="saveFeatures()">Save features</button>
   </div>`;
 }
 
@@ -1825,14 +1906,22 @@ function addCustomFeatureChip() {
   if (!input) return;
   const val = (input.value || '').trim();
   if (!val) return;
-  const grid = document.querySelector('.feat-editor-grid');
-  if (!grid) return;
-  const exists = [...grid.querySelectorAll('input[data-feat]')].some(i => i.dataset.feat.toLowerCase() === val.toLowerCase());
+  const editor = document.querySelector('.feat-editor');
+  if (!editor) return;
+  const exists = [...editor.querySelectorAll('input[data-feat]')].some(i => i.dataset.feat.toLowerCase() === val.toLowerCase());
   if (!exists) {
+    let group = editor.querySelector('.feat-group-custom .feat-group-items');
+    if (!group) {
+      const wrap = document.createElement('div');
+      wrap.className = 'feat-group feat-group-custom';
+      wrap.innerHTML = '<div class="feat-group-title">Custom</div><div class="feat-group-items"></div>';
+      editor.insertBefore(wrap, editor.querySelector('.feat-editor-add'));
+      group = wrap.querySelector('.feat-group-items');
+    }
     const lab = document.createElement('label');
-    lab.className = 'feat-check';
-    lab.innerHTML = `<input type="checkbox" data-feat="${val.replace(/"/g,'&quot;')}" checked> ${val.replace(/</g,'&lt;')}`;
-    grid.appendChild(lab);
+    lab.className = 'feat-toggle is-on';
+    lab.innerHTML = `<input type="checkbox" data-feat="${val.replace(/"/g,'&quot;')}" checked onchange="this.closest('.feat-toggle').classList.toggle('is-on', this.checked)"><span>${val.replace(/</g,'&lt;')}</span>`;
+    group.appendChild(lab);
   }
   input.value = '';
 }

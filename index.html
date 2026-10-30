@@ -2616,16 +2616,26 @@ async function initAuthGate() {
   const presetSales = document.getElementById('presetSales');
   const presetManager = document.getElementById('presetManager');
   const userInput = document.getElementById('loginUser');
-  if (presetSales) presetSales.onclick = () => {
-    presetSales.classList.add('active');
-    if (presetManager) presetManager.classList.remove('active');
-    if (userInput && !userInput.value) userInput.value = 'sales';
-  };
-  if (presetManager) presetManager.onclick = () => {
-    presetManager.classList.add('active');
-    if (presetSales) presetSales.classList.remove('active');
-    if (userInput && !userInput.value) userInput.value = 'manager';
-  };
+  function selectPreset(role) {
+    if (presetSales) presetSales.classList.toggle('active', role === 'sales');
+    if (presetManager) presetManager.classList.toggle('active', role === 'manager');
+    if (userInput) {
+      userInput.value = role === 'manager' ? 'manager' : 'sales';
+    }
+    const pass = document.getElementById('loginPass');
+    if (pass) pass.focus();
+  }
+  if (presetSales) {
+    presetSales.type = 'button';
+    presetSales.addEventListener('click', (e) => { e.preventDefault(); selectPreset('sales'); });
+  }
+  if (presetManager) {
+    presetManager.type = 'button';
+    presetManager.addEventListener('click', (e) => { e.preventDefault(); selectPreset('manager'); });
+  }
+  // Default highlight matches username field
+  if (userInput && /manager/i.test(userInput.value)) selectPreset('manager');
+  else selectPreset('sales');
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

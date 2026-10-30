@@ -1739,7 +1739,7 @@ function cardHtml(v) {
       ${reservedByHtml(v)}
       ${prepBadge(v)}
       ${soldByHtml(v)}
-      ${featureChips(v, 4)}
+      ${showImages ? featureChips(v, 4) : ''}
       ${catBadge(v)}${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
     </div>
   </div>`;

@@ -1,5 +1,6 @@
 /**
  * Fast stock sync — Pentagon Burton. No per-car detail scrapes (avoids 504).
+ * Live on website always returns to stock (stale Sold overrides ignored).
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -215,15 +216,17 @@ function applyManual(vehicle, prev, overrides, isLive) {
   if ((!vehicle.status_flags || !vehicle.status_flags.length) && prev.status_flags) vehicle.status_flags = prev.status_flags;
   if (prev.key_features && (!vehicle.key_features || !vehicle.key_features.length)) vehicle.key_features = prev.key_features;
   if (isLive) {
-    if (o.category === 'Sold' || o.category === 'Delivered') {
-      vehicle.category = o.category;
-      vehicle.sold_date = o.sold_date || prev.sold_date || vehicle.sold_date || new Date().toISOString().slice(0, 10);
-      if (o.sold_by) vehicle.sold_by = o.sold_by;
-    } else {
-      delete vehicle.sold_date;
-      const manual = o.category || (['Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(prev.category) ? prev.category : null);
-      if (manual && manual !== 'Sold' && manual !== 'Delivered') vehicle.category = manual;
-      else if (vehicle.category === 'Sold' || vehicle.category === 'Delivered') vehicle.category = 'Stock';
+    // Back on the website = on-site stock again. Never keep Sold/Delivered from a stale override.
+    delete vehicle.sold_date;
+    const manual = o.category;
+    if (manual && manual !== 'Sold' && manual !== 'Delivered') {
+      vehicle.category = manual;
+    } else if (['Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(prev.category) && (!manual || manual === 'Sold' || manual === 'Delivered')) {
+      if (vehicle.category === 'Stock' || vehicle.category === 'Sold' || vehicle.category === 'Delivered') {
+        vehicle.category = prev.category === 'Sold' || prev.category === 'Delivered' ? 'Stock' : prev.category;
+      }
+    } else if (vehicle.category === 'Sold' || vehicle.category === 'Delivered') {
+      vehicle.category = 'Stock';
     }
   } else {
     if (o.category === 'Delivered' || prev.category === 'Delivered') vehicle.category = 'Delivered';
@@ -291,9 +294,9 @@ module.exports = async function handler(req, res) {
         v.previous_price = prev.previous_price;
       }
       if (!v.sold_by && prev && prev.sold_by) v.sold_by = prev.sold_by;
-      const ov = overrides[reg] || {};
-      if ((v.category === 'Sold' || v.category === 'Delivered') && ov.category !== 'Sold' && ov.category !== 'Delivered') {
-        v.category = 'Stock';
+      // Live listing cannot stay Sold/Delivered
+      if (v.category === 'Sold' || v.category === 'Delivered') {
+        v.category = (v.status_flags || []).includes('New') ? 'New' : 'Stock';
         delete v.sold_date;
       }
       if ((v.status_flags || []).includes('New')) {
@@ -306,6 +309,7 @@ module.exports = async function handler(req, res) {
         v.status_flags = v.status_flags.filter(f => f !== 'Reserved');
       }
       delete v.is_reserved;
+      const ov = overrides[reg] || {};
       const deskSpot = v.spoticar === true || (ov && ov.spoticar === true);
       if (v.spoticar || deskSpot || (v.status_flags || []).some(f => /spoticar/i.test(String(f)))) {
         v.spoticar = true;
@@ -351,8 +355,8 @@ module.exports = async function handler(req, res) {
     const soldN = result.filter(v => v.category === 'Sold').length;
     const reservedN = result.filter(v => (v.status_flags || []).includes('Reserved') || (v.reserved_by && String(v.reserved_by).trim())).length;
     return res.status(200).json({
-      ok: true, live: live.length, inStock: stockN, sold: soldN, newlySold: soldCount, newlySoldRegs,
-      reserved: reservedN, returned: returnedCount, total: result.length,
+      ok: true, live: live.length, inStock: stockN, sold: soldN, newlySold: soldCount, newlySoldRegs, returned: returnedCount,
+      reserved: reservedN, total: result.length,
       scrapeErrors: scrapeErrors.length ? scrapeErrors : undefined,
       ms: Date.now() - started, at: new Date().toISOString(),
     });

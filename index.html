@@ -1619,9 +1619,16 @@ function openDetail(id) {
   ).join('') || '<p class="vd-muted">No notes yet.</p>';
 
   const spec = formatSpec(v.derivative || '') || '—';
-  const pentagon = v.detail_url
-    ? `<a class="vd-link" href="${v.detail_url}" target="_blank" rel="noopener">View on Pentagon ↗</a>`
-    : '';
+  const onSite = !['Sold','Delivered'].includes(v.category || 'Stock');
+  let pentagon = '';
+  if (onSite && v.detail_url) {
+    pentagon = `<a class="vd-link" href="${v.detail_url}" target="_blank" rel="noopener">View on Pentagon (Burton listing) ↗</a>`;
+  } else {
+    pentagon = `<a class="vd-link" href="https://www.pentagon-group.co.uk/used-cars-in-burton" target="_blank" rel="noopener">Burton used stock on Pentagon ↗</a>`;
+    if (['Sold','Delivered'].includes(v.category || '')) {
+      pentagon += `<span class="vd-muted" style="display:block;margin-top:0.25rem;font-size:0.8rem">Original advert removed (sold / off the site)</span>`;
+    }
+  }
 
   document.getElementById('detailBody').innerHTML = `
     <div class="vd">
@@ -1762,7 +1769,7 @@ function printStockCard() {
   if (!v) return;
   // Prefer official Pentagon "print vehicle" page (accurate stock card)
   let printUrl = '';
-  if (v.detail_url) {
+  if (v.detail_url && !['Sold','Delivered'].includes(v.category || '')) {
     printUrl = v.detail_url.replace(/\/?$/, '') + '/print';
   }
   if (printUrl) {
@@ -2162,11 +2169,16 @@ async function loadFromVehiclesJson() {
       v.service_history_notes = (o.service_history_notes != null ? o.service_history_notes : null) ?? (prev.service_history_notes || '');
       v.status_flags = (o.status_flags != null ? o.status_flags : null) ?? (prev.status_flags || []);
       v.special_offer = (o.special_offer != null ? o.special_offer : null) ?? (prev.special_offer || v.special_offer || '');
-      // Category: Sold/Delivered etc from overrides or previous, else scraped
-      if (o.category) v.category = o.category;
-      else if (prev.category && prev.category !== 'Stock' && v.category === 'Stock') {
-        // keep manual categories only if scrape still says Stock and we had something else
-        // (Sold is set by server sync when car leaves website)
+      // Category: server Sold/Delivered always wins (car left the website).
+      if (v.category === 'Sold' || v.category === 'Delivered') {
+        if (o.category === 'Delivered') v.category = 'Delivered';
+      } else if (o.category === 'Sold' || o.category === 'Delivered') {
+        v.category = o.category;
+        if (o.sold_date) v.sold_date = o.sold_date;
+      } else if (o.category) {
+        v.category = o.category;
+      } else if (prev.category && ['Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(prev.category) && v.category === 'Stock') {
+        v.category = prev.category;
       }
       if (prev.bring_into_stock_date && !v.bring_into_stock_date) v.bring_into_stock_date = prev.bring_into_stock_date;
       if (!v.image_url && imgMap[v.registration]) v.image_url = imgMap[v.registration];
@@ -2225,7 +2237,12 @@ function applyOverridesToVehicles(overrides) {
       v.sold_date = o.sold_date; changed = true;
     }
     if (o.category != null && o.category !== v.category) {
-      v.category = o.category; changed = true;
+      // Never pull a server-Sold car back to Stock via stale override
+      if ((v.category === 'Sold' || v.category === 'Delivered') && o.category !== 'Sold' && o.category !== 'Delivered') {
+        /* keep sold */
+      } else {
+        v.category = o.category; changed = true;
+      }
     }
     if (o.status_flags != null && JSON.stringify(o.status_flags) !== JSON.stringify(v.status_flags || [])) {
       v.status_flags = o.status_flags; changed = true;

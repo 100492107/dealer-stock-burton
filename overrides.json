@@ -85,5 +85,15 @@
     "sold_by": "",
     "updatedAt": "2026-10-30T09:53:11.466Z",
     "sold_date": "2026-10-30"
+  },
+  "FM25RCU": {
+    "notes": [
+      {
+        "date": "30/10/2026, 16:46:26",
+        "text": "£2500 FDA SPOTICAR",
+        "by": "team"
+      }
+    ],
+    "updatedAt": "2026-10-30T16:46:26.730Z"
   }
 }

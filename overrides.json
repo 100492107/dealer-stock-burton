@@ -26,9 +26,11 @@
         "text": "2 KEYS. PEG 23."
       }
     ],
-    "updatedAt": "2026-10-28T16:42:26.556Z",
+    "updatedAt": "2026-10-31T11:28:44.907Z",
     "service_history_notes": "",
-    "status_flags": [],
+    "status_flags": [
+      "Deposit Taken"
+    ],
     "special_offer": "",
     "category": "Stock",
     "peg_number": "23"

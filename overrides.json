@@ -254,5 +254,14 @@
     "sold_date": "2026-10-25",
     "spoticar": false,
     "updatedAt": "2026-10-31T19:19:07.797Z"
+  },
+  "ML73UNB": {
+    "service_history": "Full Service History",
+    "service_history_notes": "",
+    "status_flags": [],
+    "special_offer": "",
+    "category": "Stock",
+    "notes": [],
+    "updatedAt": "2026-10-31T19:21:33.246Z"
   }
 }

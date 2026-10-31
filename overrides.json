@@ -137,5 +137,15 @@
     "category": "Demonstrators",
     "notes": [],
     "updatedAt": "2026-10-31T19:13:19.312Z"
+  },
+  "FG76RNU": {
+    "status_flags": [],
+    "category": "Pre-reg",
+    "prep_status": "",
+    "reserved_by": "",
+    "reserved_at": "",
+    "sold_by": "",
+    "spoticar": false,
+    "updatedAt": "2026-10-31T19:13:35.704Z"
   }
 }

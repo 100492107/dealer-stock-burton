@@ -243,5 +243,16 @@
     "sold_date": "2026-10-25",
     "spoticar": false,
     "updatedAt": "2026-10-31T19:18:20.082Z"
+  },
+  "LS16ZYN": {
+    "status_flags": [],
+    "category": "Sold",
+    "prep_status": "Ready",
+    "reserved_by": "",
+    "reserved_at": "",
+    "sold_by": "AARON",
+    "sold_date": "2026-10-25",
+    "spoticar": false,
+    "updatedAt": "2026-10-31T19:18:56.708Z"
   }
 }

@@ -44,7 +44,16 @@
         "text": "SPOTICAR"
       }
     ],
-    "updatedAt": "2026-10-22T19:54:32.820Z"
+    "updatedAt": "2026-10-31T19:16:09.632Z",
+    "status_flags": [
+      "SPOTiCAR"
+    ],
+    "category": "Stock",
+    "prep_status": "",
+    "reserved_by": "",
+    "reserved_at": "",
+    "sold_by": "",
+    "spoticar": true
   },
   "WP70LPC": {
     "service_history": "",

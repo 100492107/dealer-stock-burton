@@ -220,5 +220,17 @@
     "sold_by": "",
     "spoticar": false,
     "updatedAt": "2026-10-31T19:16:55.073Z"
+  },
+  "HT25GVJ": {
+    "status_flags": [
+      "SPOTiCAR"
+    ],
+    "category": "Stock",
+    "prep_status": "Ready",
+    "reserved_by": "",
+    "reserved_at": "",
+    "sold_by": "",
+    "spoticar": true,
+    "updatedAt": "2026-10-31T19:17:19.205Z"
   }
 }

@@ -232,5 +232,16 @@
     "sold_by": "",
     "spoticar": true,
     "updatedAt": "2026-10-31T19:17:19.205Z"
+  },
+  "DP70OTR": {
+    "status_flags": [],
+    "category": "Sold",
+    "prep_status": "",
+    "reserved_by": "",
+    "reserved_at": "",
+    "sold_by": "ADRIAN HINDS",
+    "sold_date": "2026-10-25",
+    "spoticar": false,
+    "updatedAt": "2026-10-31T19:18:20.082Z"
   }
 }

@@ -96,8 +96,9 @@
     "reserved_by": "",
     "reserved_at": "",
     "sold_by": "",
-    "updatedAt": "2026-11-04T04:38:17.299Z",
-    "sold_date": "2026-10-30"
+    "updatedAt": "2026-11-04T04:38:27.033Z",
+    "sold_date": "2026-10-30",
+    "spoticar": false
   },
   "FM25RCU": {
     "notes": [

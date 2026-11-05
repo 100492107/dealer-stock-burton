@@ -1574,10 +1574,10 @@ function markSyncOk() {
 }
 
 async function syncStockNow(opts) {
-  if (!isManager()) { alert('Only managers can sync stock from Pentagon.'); return; }
-
   opts = opts || {};
   const silent = !!opts.silent;
+  // Sales never sync — fail quietly (auto-refresh was popping the alert)
+  if (!isManager()) return false;
   if (!location.protocol.startsWith('http')) {
     if (!silent) alert('Sync only works on the live site.');
     return false;

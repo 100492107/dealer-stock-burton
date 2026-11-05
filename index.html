@@ -1833,8 +1833,9 @@ function normalizeFeatureLabel(raw) {
   if (/apple\s*carplay|carplay/i.test(f)) return 'Apple CarPlay';
   if (/android\s*auto/i.test(f)) return 'Android Auto';
   if (/wireless\s*charg/i.test(f)) return 'Wireless Charging';
-  if (/panoramic|glass\s*roof/i.test(f)) return 'Panoramic Roof';
-  if (/sun\s*roof|sunroof/i.test(f) && !/panoramic/i.test(f)) return 'Sunroof';
+  if (/panoramic/i.test(f)) return 'Panoramic Roof';
+  if (/glass\s*roof|fixed\s*glass/i.test(f)) return 'Glass Roof';
+  if (/sun\s*roof|sunroof/i.test(f)) return 'Sunroof';
   return f;
 }
 
@@ -1842,7 +1843,7 @@ function normalizeFeatureLabel(raw) {
 const FEATURE_GROUPS = [
   { title: 'Seats & comfort', items: ['Heated Seats', 'Ventilated Seats', 'Massage Seats', 'Electric Seats', 'Memory Seats', 'Heated Steering Wheel', 'Climate Control'] },
   { title: 'Upholstery', items: ['Full Leather', 'Part Leather', 'Nappa Leather', 'Leatherette', 'Alcantara'] },
-  { title: 'Roof & lighting', items: ['Panoramic Roof', 'Sunroof', 'Ambient Lighting', 'LED Headlights', 'Matrix LED Headlights'] },
+  { title: 'Roof & lighting', items: ['Panoramic Roof', 'Glass Roof', 'Sunroof', 'Ambient Lighting', 'LED Headlights', 'Matrix LED Headlights'] },
   { title: 'Tech', items: ['Apple CarPlay', 'Android Auto', 'Wireless Charging', 'Premium Audio', 'Head-Up Display', 'Sat Nav'] },
   { title: 'Driver assist', items: ['Adaptive Cruise Control', 'Parking Sensors', 'Reversing Camera', '360 Camera', 'Park Assist', 'Blind Spot Monitor', 'Keyless Entry', 'Power Tailgate'] },
 ];

@@ -1,7 +1,7 @@
 /**
  * Fast stock sync — Pentagon Burton.
- * New cars: detail-page feature scrape (time-capped). Existing: reuse features.
- * Live on website always returns to stock.
+ * Features: only from listing equipment (no title guessing).
+ * Glass roof is NOT panoramic. Live cars return to stock.
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -47,7 +47,7 @@ const DESIRABLE_RE = [
   /heated\s*(front\s*)?seat/i, /heated\s*steering/i, /ventilated\s*seat/i, /cooled\s*seat/i, /massage\s*seat/i,
   /electric\s*(front\s*)?seat/i, /memory\s*seat/i,
   /(?:full|part|partial)\s*leather|nappa|alcantara|dakota|vernasca|sensatec|leatherette|technoleather/i,
-  /ambient\s*light/i, /panoramic/i, /sunroof/i, /glass\s*roof/i,
+  /ambient\s*light/i, /panoramic/i, /sunroof/i, /glass\s*roof/i, /fixed\s*glass/i,
   /matrix\s*led/i, /\bled\s*head/i, /adaptive\s*cruise/i,
   /blind\s*spot/i, /lane\s*(?:keep|assist|depart)/i,
   /parking\s*camera/i, /revers(?:e|ing)\s*camera/i, /360|surround\s*camera/i, /parking\s*sensor/i,
@@ -61,33 +61,9 @@ function isDesirableFeature(name) {
   if (!n || n.length < 3 || n.length > 120) return false;
   if (/styling/i.test(n)) return false;
   if (/leather/i.test(n) && /steering\s*wheel|gear\s*(knob|lever)|handbrake/i.test(n) && !/seat/i.test(n)) return false;
-  if (/vernasca|dakota|nappa|merino|alcantara|sensatec|technoleather|full\s*leather|part\s*leather/i.test(n)) return true;
+  if (/vernasca|dakota|nappa|merino|alcantara|sensatec|technoleather|full\s*leather|part\s*leather|glass\s*roof|fixed\s*glass/i.test(n)) return true;
   if (/^leather\s*[-–—]/i.test(n)) return true;
   return DESIRABLE_RE.some(re => re.test(n));
-}
-function inferTrimFeatures(v) {
-  const blob = [v.make, v.model, v.derivative].filter(Boolean).join(' ').toLowerCase();
-  const out = [];
-  const add = (...items) => items.forEach(i => { if (i && !out.includes(i)) out.push(i); });
-  if (/heated\s*(front\s*)?seat/.test(blob)) add('Heated Seats');
-  if (/ventilated|cooled\s*seat/.test(blob)) add('Ventilated Seats');
-  if (/massage\s*seat/.test(blob)) add('Massage Seats');
-  if (/electric\s*(front\s*)?seat|memory\s*seat/.test(blob)) add('Electric Seats');
-  if (/heated\s*steering|heated\s*wheel/.test(blob)) add('Heated Steering Wheel');
-  if (/wireless\s*charg/.test(blob)) add('Wireless Charging');
-  if (/panoramic|pan\s*roof|glass\s*roof/.test(blob)) add('Panoramic Roof');
-  if (/sunroof|sun\s*roof/.test(blob)) add('Sunroof');
-  if (/apple\s*carplay|carplay/.test(blob)) add('Apple CarPlay');
-  if (/android\s*auto/.test(blob)) add('Android Auto');
-  if (/bose|harman|meridian|premium\s*sound/.test(blob)) add('Premium Audio');
-  if (/nappa/.test(blob)) add('Nappa Leather');
-  else if (/full[\s-]*leather/.test(blob)) add('Full Leather');
-  else if (/part[\s-]*leather|leather\s*bolster/.test(blob)) add('Part Leather');
-  if (/ambient\s*light/.test(blob)) add('Ambient Lighting');
-  if (/parking\s*sensor/.test(blob)) add('Parking Sensors');
-  if (/\bled\s*head/.test(blob)) add('LED Headlights');
-  if (/keyless/.test(blob)) add('Keyless Entry');
-  return out;
 }
 function mergeFeatures(scraped, inferred) {
   const seen = new Set();
@@ -111,7 +87,9 @@ function mergeFeatures(scraped, inferred) {
       else if (/apple\s*carplay|carplay/i.test(label)) label = 'Apple CarPlay';
       else if (/android\s*auto/i.test(label)) label = 'Android Auto';
       else if (/wireless\s*charg/i.test(label)) label = 'Wireless Charging';
-      else if (/panoramic|glass\s*roof/i.test(label)) label = 'Panoramic Roof';
+      else if (/panoramic/i.test(label)) label = 'Panoramic Roof';
+      else if (/glass\s*roof|fixed\s*glass/i.test(label)) label = 'Glass Roof';
+      else if (/sun\s*roof|sunroof/i.test(label)) label = 'Sunroof';
       const k = label.toLowerCase();
       if (seen.has(k)) continue;
       seen.add(k);
@@ -168,7 +146,7 @@ async function enrichNewFeatures(liveList, prevByReg, timeBudgetMs) {
       const v = need[idx];
       try {
         const feats = await fetchKeyFeatures(v.detail_url);
-        if (feats.length) v.key_features = feats;
+        if (feats.length) v.key_features = mergeFeatures(feats, []);
       } catch (_) {}
     }
   }
@@ -176,8 +154,7 @@ async function enrichNewFeatures(liveList, prevByReg, timeBudgetMs) {
     await Promise.all(Array.from({ length: Math.min(concurrency, need.length) }, () => worker()));
   }
   for (const v of liveList) {
-    const inferred = inferTrimFeatures(v);
-    v.key_features = mergeFeatures(v.key_features || [], inferred);
+    v.key_features = mergeFeatures(v.key_features || [], []);
   }
   return { list: liveList, scrapedNew: need.length, remainingEmpty: liveList.filter(v => !(v.key_features || []).length).length };
 }

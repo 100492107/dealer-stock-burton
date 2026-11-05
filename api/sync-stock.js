@@ -1,7 +1,5 @@
 /**
- * Fast stock sync — Pentagon Burton.
- * Features: only from listing equipment (no title guessing).
- * Glass roof is NOT panoramic. Live cars return to stock.
+ * Stock sync — force feature refresh from detail pages (accurate kit only).
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -128,17 +126,21 @@ async function fetchKeyFeatures(detailUrl) {
     return [];
   }
 }
-async function enrichNewFeatures(liveList, prevByReg, timeBudgetMs) {
+async function enrichNewFeatures(liveList, prevByReg, timeBudgetMs, forceAll) {
   const start = Date.now();
-  for (const v of liveList) {
-    const prev = prevByReg[v.registration];
-    if (prev && Array.isArray(prev.key_features) && prev.key_features.length) {
-      v.key_features = prev.key_features.slice();
+  if (!forceAll) {
+    for (const v of liveList) {
+      const prev = prevByReg[v.registration];
+      if (prev && Array.isArray(prev.key_features) && prev.key_features.length) {
+        v.key_features = prev.key_features.slice();
+      }
     }
+  } else {
+    for (const v of liveList) v.key_features = [];
   }
-  const need = liveList.filter(v => !!v.detail_url && (!v.key_features || !v.key_features.length));
+  const need = liveList.filter(v => !!v.detail_url && (forceAll || !v.key_features || !v.key_features.length));
   let i = 0;
-  const concurrency = 6;
+  const concurrency = 10;
   async function worker() {
     while (i < need.length) {
       if (Date.now() - start > timeBudgetMs) break;
@@ -146,8 +148,13 @@ async function enrichNewFeatures(liveList, prevByReg, timeBudgetMs) {
       const v = need[idx];
       try {
         const feats = await fetchKeyFeatures(v.detail_url);
-        if (feats.length) v.key_features = mergeFeatures(feats, []);
-      } catch (_) {}
+        v.key_features = mergeFeatures(feats || [], []);
+      } catch (_) {
+        if (!forceAll) {
+          const prev = prevByReg[v.registration];
+          if (prev && prev.key_features) v.key_features = prev.key_features;
+        }
+      }
     }
   }
   if (need.length) {
@@ -379,7 +386,7 @@ module.exports = async function handler(req, res) {
     const overrides = ovFile.data && typeof ovFile.data === 'object' ? ovFile.data : {};
     const archivedSold = Array.isArray(soldFile.data) ? soldFile.data : [];
     const prevByReg = Object.fromEntries(previous.filter(v => v.registration).map(v => [v.registration, v]));
-    const enrich = await enrichNewFeatures(liveRaw, prevByReg, 14000);
+    const enrich = await enrichNewFeatures(liveRaw, prevByReg, 52000, true);
     const live = enrich.list;
     const liveByReg = Object.fromEntries(live.map(v => [v.registration, v]));
     const liveRegs = new Set(Object.keys(liveByReg));
@@ -455,7 +462,7 @@ module.exports = async function handler(req, res) {
       if (ka[2] !== kb[2]) return ka[2].localeCompare(kb[2]);
       return (a.retail_price ?? 1e12) - (b.retail_price ?? 1e12);
     });
-    const writeV = await writeJsonFile('vehicles.json', result, vehFile.sha, `Stock sync: ${live.length} live, ${soldCount} newly sold`);
+    const writeV = await writeJsonFile('vehicles.json', result, vehFile.sha, `Stock sync + feature refresh: ${live.length} live`);
     if (writeV.status !== 200 && writeV.status !== 201) {
       return res.status(500).json({ ok: false, error: 'Failed to write vehicles.json', detail: writeV.data, status: writeV.status });
     }
@@ -467,14 +474,12 @@ module.exports = async function handler(req, res) {
       const imgs = {};
       for (const v of result) if (v.image_url) imgs[v.registration] = v.image_url;
       const { sha: imgSha } = await readJsonFile('images_map.json');
-      await writeJsonFile('images_map.json', imgs, imgSha, 'Update images_map after stock sync');
+      await writeJsonFile('images_map.json', imgs, imgSha, 'Update images_map');
     } catch (_) {}
     const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(v.category)).length;
-    const soldN = result.filter(v => v.category === 'Sold').length;
-    const reservedN = result.filter(v => (v.status_flags || []).includes('Reserved') || (v.reserved_by && String(v.reserved_by).trim())).length;
     return res.status(200).json({
-      ok: true, live: live.length, inStock: stockN, sold: soldN, newlySold: soldCount, newlySoldRegs, returned: returnedCount,
-      reserved: reservedN, total: result.length,
+      ok: true, live: live.length, inStock: stockN, sold: result.filter(v => v.category === 'Sold').length,
+      newlySold: soldCount, returned: returnedCount, total: result.length,
       featuresScraped: enrich.scrapedNew, featuresEmpty: enrich.remainingEmpty,
       scrapeErrors: scrapeErrors.length ? scrapeErrors : undefined,
       ms: Date.now() - started, at: new Date().toISOString(),

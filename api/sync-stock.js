@@ -1,5 +1,5 @@
 /**
- * Stock sync — force feature refresh from detail pages (accurate kit only).
+ * Stock sync — Pentagon BURTON only. Features kept once scraped; stock/sold from live listing.
  */
 const OWNER = '100492107';
 const REPO = 'dealer-stock-burton';
@@ -386,7 +386,7 @@ module.exports = async function handler(req, res) {
     const overrides = ovFile.data && typeof ovFile.data === 'object' ? ovFile.data : {};
     const archivedSold = Array.isArray(soldFile.data) ? soldFile.data : [];
     const prevByReg = Object.fromEntries(previous.filter(v => v.registration).map(v => [v.registration, v]));
-    const enrich = await enrichNewFeatures(liveRaw, prevByReg, 52000, true);
+    const enrich = await enrichNewFeatures(liveRaw, prevByReg, 14000, false);
     const live = enrich.list;
     const liveByReg = Object.fromEntries(live.map(v => [v.registration, v]));
     const liveRegs = new Set(Object.keys(liveByReg));
@@ -397,14 +397,19 @@ module.exports = async function handler(req, res) {
     for (const [reg, old] of Object.entries(prevByReg)) {
       if (!liveRegs.has(reg)) {
         const wasOnSite = !['Sold', 'Delivered'].includes(old.category || 'Stock');
+        const o = overrides[reg] || {};
         applyManual(old, old, overrides, false);
-        if (old.category !== 'Delivered') {
+        if (o.category === 'Delivered' || old.category === 'Delivered') {
+          old.category = 'Delivered';
+        } else {
           if (wasOnSite) {
             old.sold_date = old.sold_date || today;
             soldCount++;
             newlySoldRegs.push(reg);
           }
           old.category = 'Sold';
+          if (o.sold_by) old.sold_by = o.sold_by;
+          if (o.sold_date) old.sold_date = o.sold_date;
         }
         old.status_flags = (old.status_flags || []).filter(f => f !== 'Reserved');
         result.push(old);
@@ -462,7 +467,7 @@ module.exports = async function handler(req, res) {
       if (ka[2] !== kb[2]) return ka[2].localeCompare(kb[2]);
       return (a.retail_price ?? 1e12) - (b.retail_price ?? 1e12);
     });
-    const writeV = await writeJsonFile('vehicles.json', result, vehFile.sha, `Stock sync + feature refresh: ${live.length} live`);
+    const writeV = await writeJsonFile('vehicles.json', result, vehFile.sha, `Burton sync: ${live.length} live, ${soldCount} newly sold`);
     if (writeV.status !== 200 && writeV.status !== 201) {
       return res.status(500).json({ ok: false, error: 'Failed to write vehicles.json', detail: writeV.data, status: writeV.status });
     }
@@ -479,7 +484,7 @@ module.exports = async function handler(req, res) {
     const stockN = result.filter(v => ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'].includes(v.category)).length;
     return res.status(200).json({
       ok: true, live: live.length, inStock: stockN, sold: result.filter(v => v.category === 'Sold').length,
-      newlySold: soldCount, returned: returnedCount, total: result.length,
+      newlySold: soldCount, newlySoldRegs, returned: returnedCount, total: result.length,
       featuresScraped: enrich.scrapedNew, featuresEmpty: enrich.remainingEmpty,
       scrapeErrors: scrapeErrors.length ? scrapeErrors : undefined,
       ms: Date.now() - started, at: new Date().toISOString(),

@@ -1508,6 +1508,36 @@ body, button, input, select, textarea {
   .vehicle-card .price { font-size: 0.85rem; }
 }
 
+
+.vd-pentagon-top {
+  margin: 0 0 0.75rem;
+}
+.vd-pentagon-top .vd-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  background: #fff;
+  border: 1.5px solid var(--primary);
+  border-radius: 10px;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+}
+.vd-pentagon-top .vd-link:hover {
+  background: var(--primary-dim);
+}
+@media (max-width: 720px) {
+  .vd-pentagon-top .vd-link {
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+}
+
 </style>
 
 </head>
@@ -2633,6 +2663,7 @@ function openDetail(id) {
     <div class="vd">
       <div class="vd-left">
         ${photo}
+        ${pentagon ? `<div class="vd-pentagon-top no-print">${pentagon}</div>` : ''}
         <div class="vd-price-row">
           <div class="vd-price">${fmtPrice(v.retail_price)}</div>
           ${statusPills(v)}
@@ -2755,7 +2786,6 @@ function openDetail(id) {
             <button type="button" class="btn btn-primary" onclick="addNote()">Add note</button>
           </div>` : ''}
         </div>
-        ${pentagon ? `<div class="vd-section">${pentagon}</div>` : ''}
       </div>
       <div class="vd-actions-mobile no-print">
         <button type="button" class="btn btn-primary mgr-only" onclick="editCurrent()">Edit details</button>

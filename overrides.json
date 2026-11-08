@@ -65,12 +65,13 @@
         "text": "Gearbox Service done Jan 2026"
       }
     ],
-    "updatedAt": "2026-11-08T12:01:12.466Z",
+    "updatedAt": "2026-11-08T12:01:15.070Z",
     "prep_status": "",
     "reserved_by": "",
     "reserved_at": "",
     "sold_by": "",
-    "sold_date": "2026-10-28"
+    "sold_date": "2026-10-28",
+    "spoticar": false
   },
   "DF65CUK": {
     "service_history": "",

@@ -1151,6 +1151,170 @@ body.role-sales .vd-note-form { display: none !important; }
 .feat-save-btn { width: 100%; }
 .vd-feat-empty { font-size: 0.85rem; color: #64748b; margin: 0 0 0.5rem; }
 
+
+/* —— Unified theme + denser cards (desktop & mobile) —— */
+body, button, input, select, textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.vehicle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+.vehicle-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  transition: box-shadow .15s, border-color .15s, transform .15s;
+}
+.vehicle-card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: #b8c7de;
+  transform: translateY(-1px);
+}
+.vehicle-card .card-img,
+.vehicle-card .card-img-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: var(--bg-soft);
+  display: block;
+}
+.vehicle-card .card-img-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 0.75rem; font-weight: 500;
+}
+.vehicle-card .card-body {
+  padding: 0.55rem 0.7rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  flex: 1;
+  min-width: 0;
+}
+.vehicle-card .card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.vehicle-card .model {
+  font-weight: 700;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: var(--text);
+}
+.vehicle-card .price {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.vehicle-card .reg-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+}
+.vehicle-card .reg {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.vehicle-card .meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.3;
+}
+.vehicle-card .card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.vehicle-card .colour {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.vehicle-card .card-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.vehicle-card .card-peg {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-dim);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+.vehicle-card .feature-chips { margin-top: 0.15rem; }
+.vehicle-card .feat {
+  font-size: 0.62rem;
+  padding: 0.1rem 0.35rem;
+}
+.vehicle-card .flags { margin-top: 0.15rem; }
+.vehicle-card.no-img .card-body { padding-top: 0.65rem; }
+
+/* Horizontal denser layout on wider phones / tablets when photos on */
+@media (min-width: 520px) {
+  .vehicle-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .vehicle-card:not(.no-img) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .vehicle-card:not(.no-img) .card-img,
+  .vehicle-card:not(.no-img) .card-img-placeholder {
+    width: 38%;
+    max-width: 150px;
+    aspect-ratio: 1;
+    min-height: 100%;
+    align-self: stretch;
+  }
+  .vehicle-card:not(.no-img) .card-body {
+    padding: 0.5rem 0.65rem;
+  }
+}
+
+@media (max-width: 519px) {
+  .vehicle-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  .vehicle-card .model { font-size: 0.82rem; }
+  .vehicle-card .price { font-size: 0.88rem; }
+  .vehicle-card .card-body { padding: 0.5rem 0.65rem 0.55rem; }
+  .vehicle-card .card-img,
+  .vehicle-card .card-img-placeholder {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* Buttons / controls same typeface */
+.btn, .btn-ghost, .btn-secondary, .btn-primary,
+.nav-links button, .status-seg button, input, select, textarea {
+  font-family: inherit;
+}
+.btn, .btn-primary, .btn-secondary {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
 </style>
 
 </head>
@@ -1228,7 +1392,7 @@ body.role-sales .vd-note-form { display: none !important; }
       <input type="search" id="searchInput" placeholder="Search reg, make, model, colour…" onkeydown="if(event.key==='Enter'){renderList()}">
       <button type="button" class="btn btn-primary" onclick="renderList()">Search</button>
       <button type="button" class="btn-clear-search" id="clearSearchBtn" onclick="goHome()" style="display:none">✕ All stock</button>
-      <button type="button" class="btn btn-secondary" onclick="exportCsv()" class="mgr-only" title="Export visible stock to CSV" class="mgr-only">Export CSV</button>
+      <button type="button" class="btn btn-secondary mgr-only" onclick="exportCsv()" title="Export visible list to CSV">Export CSV</button>
     </div>
   </div>
 
@@ -1706,6 +1870,9 @@ function save() {
 }
 
 
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function cleanModelDisplay(make, model) {
   let m = (model || '').trim();
   const mk = (make || '').trim();
@@ -1990,30 +2157,39 @@ function toggleFeatPanel(uid, btn) {
 
 
 function cardHtml(v) {
-  const flags = (v.status_flags || []).filter(f => f !== 'Reserved').map(f => `<span class="flag">${f}</span>`).join('');
+  const flags = (v.status_flags || []).filter(f => f !== 'Reserved' && f !== 'New').map(f => `<span class="flag">${escHtml(f)}</span>`).join('');
   let img = '';
   if (showImages) {
     img = v.image_url
       ? `<img class="card-img" src="${v.image_url}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-img-placeholder',textContent:'No photo'}))">`
       : `<div class="card-img-placeholder">No photo</div>`;
   }
-  const peg = (v.dealer_peg || '').trim();
+  const peg = (v.dealer_peg || v.peg_number || '').trim();
+  const makeModel = escHtml(cleanModelDisplay(v.make, v.model));
+  const year = v.model_year || '—';
+  const miles = (v.mileage != null ? Number(v.mileage).toLocaleString('en-GB') : '—') + ' mi';
+  const fuelTx = [v.fuel, v.transmission].filter(Boolean).join(' · ');
   return `<div class="vehicle-card${showImages ? '' : ' no-img'}" onclick="openDetail('${(v.id || v.registration || '').replace(/'/g,"\\'")}')">
     ${img}
     <div class="card-body">
-      <div class="card-top"><span class="model">${cleanModelDisplay(v.make, v.model)}</span>${priceBlock(v)}</div>
-      <div class="spec">${formatSpec(v.derivative || '')}</div>
-      <div class="meta"><span>${v.model_year || '—'} · ${(v.mileage||0).toLocaleString()} mi · ${isSpoticar(v) ? `<span class="badge-spoticar">SPOTiCAR</span>` : ''}${daysBadge(v)}</span><span>${v.fuel || ''} ${v.transmission || ''}</span></div>
-      <div class="reg">${v.registration || ''}</div>
-      <div class="card-colour-peg">
-        <span class="colour">${v.colour || ''}</span>
-        ${peg ? `<span class="card-peg">PEG ${peg.replace(/</g,'&lt;')}</span>` : ''}
+      <div class="card-top">
+        <span class="model">${makeModel}</span>
+        ${priceBlock(v)}
+      </div>
+      <div class="card-row reg-line">
+        <span class="reg">${escHtml(v.registration || '')}</span>
+        ${peg ? `<span class="card-peg">PEG ${escHtml(peg)}</span>` : ''}
+      </div>
+      <div class="meta">${year} · ${miles}${fuelTx ? ' · ' + escHtml(fuelTx) : ''}</div>
+      <div class="card-row">
+        <span class="colour">${escHtml(v.colour || '')}</span>
+        <span class="card-tags">${isSpoticar(v) ? '<span class="badge-spoticar">SPOTiCAR</span>' : ''}${daysBadge(v)}${catBadge(v)}</span>
       </div>
       ${reservedByHtml(v)}
       ${prepBadge(v)}
       ${soldByHtml(v)}
-      ${showImages ? featureChips(v, 4) : ''}
-      ${catBadge(v)}${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
+      ${showImages ? featureChips(v, 3) : ''}
+      ${serviceBadge(v)}${flags ? `<div class="flags">${flags}</div>` : ''}
     </div>
   </div>`;
 }
@@ -2769,28 +2945,74 @@ function updateDashStrip() {
   set('dashOver60', over60.length);
 }
 
+function getVisibleList() {
+  const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+  const fuel = (document.getElementById('filterFuel') || {}).value || '';
+  const minP = parseFloat((document.getElementById('filterMinPrice') || {}).value);
+  const maxP = parseFloat((document.getElementById('filterMaxPrice') || {}).value);
+  const sortBy = (document.getElementById('sortBy') || {}).value || 'default';
+  const ON_SITE = ['Stock','Demonstrators','Pre-reg','Commercials','Arriving Soon','New'];
+  let list = vehicles.filter(v => {
+    if (currentCat === 'All') return true;
+    if (currentCat === 'Stock') return ON_SITE.includes(v.category || 'Stock');
+    if (currentCat === 'SPOTiCAR') return ON_SITE.includes(v.category || 'Stock') && isSpoticar(v);
+    if (currentCat === 'Reserved') {
+      return ON_SITE.includes(v.category || 'Stock') && (
+        (v.status_flags || []).includes('Reserved') || !!(v.reserved_by && String(v.reserved_by).trim())
+      );
+    }
+    if (currentCat === 'Sold') return v.category === 'Sold' || v.category === 'Delivered';
+    return v.category === currentCat;
+  });
+  if (q) {
+    list = list.filter(v =>
+      (v.registration||'').toLowerCase().includes(q) ||
+      (v.make||'').toLowerCase().includes(q) ||
+      (v.model||'').toLowerCase().includes(q) ||
+      (v.derivative||'').toLowerCase().includes(q) ||
+      (v.colour||'').toLowerCase().includes(q) ||
+      (v.dealer_peg||'').toLowerCase().includes(q)
+    );
+  }
+  if (fuel) list = list.filter(v => (v.fuel || '').toLowerCase().includes(fuel.toLowerCase()));
+  if (!isNaN(minP)) list = list.filter(v => v.retail_price != null && Number(v.retail_price) >= minP);
+  if (!isNaN(maxP)) list = list.filter(v => v.retail_price != null && Number(v.retail_price) <= maxP);
+  if (sortBy === 'price-asc') list.sort((a,b) => (a.retail_price??1e12) - (b.retail_price??1e12));
+  else if (sortBy === 'price-desc') list.sort((a,b) => (b.retail_price??0) - (a.retail_price??0));
+  else if (sortBy === 'mileage') list.sort((a,b) => (a.mileage??0) - (b.mileage??0));
+  else if (sortBy === 'days') list.sort((a,b) => (daysInStock(b)??0) - (daysInStock(a)??0));
+  else {
+    list.sort((a,b) => {
+      const mk = (a.make||'').localeCompare(b.make||'');
+      if (mk) return mk;
+      const mo = (a.model||'').localeCompare(b.model||'');
+      if (mo) return mo;
+      return (a.retail_price??1e12) - (b.retail_price??1e12);
+    });
+  }
+  return list;
+}
+
 function exportCsv() {
-  const rows = vehicles.slice().sort((a,b) => (a.make||'').localeCompare(b.make||'') || (a.model||'').localeCompare(b.model||''));
+  const rows = getVisibleList();
   const cols = ['registration','make','model','derivative','model_year','mileage','fuel','transmission','colour','retail_price','previous_price','dealer_peg','prep_status','reserved_by','reserved_at','sold_by','sold_date','category','service_history','bring_into_stock_date','days_in_stock'];
   const esc = (x) => {
     const s = x == null ? '' : String(x);
-    if (/[",\\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   };
   const lines = [cols.join(',')];
   rows.forEach(v => {
     const days = daysInStock(v);
-    const line = cols.map(c => {
-      if (c === 'days_in_stock') return esc(days);
-      return esc(v[c]);
-    }).join(',');
-    lines.push(line);
+    lines.push(cols.map(c => c === 'days_in_stock' ? esc(days) : esc(v[c])).join(','));
   });
-  const blob = new Blob([lines.join('\\n')], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'dealer-stock-burton-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(a.href);
 }
 

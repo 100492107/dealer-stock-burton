@@ -141,20 +141,100 @@ body {
 #syncStatusMobile { display: none; font-size: 0.75rem; color: var(--muted); padding: 0 0 0.5rem; }
 
 /* Brand / model headings (actual JS class names) */
-.make-section { margin-bottom: 1.75rem; }
+.make-section {
+  margin-bottom: 2rem;
+  padding-bottom: 0.5rem;
+}
 .make-title {
-  font-size: 1.05rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--primary); border-bottom: 2px solid var(--primary);
-  padding-bottom: 0.4rem; margin-bottom: 0.75rem;
+  position: sticky;
+  top: 56px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.95rem;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.make-title .make-name { color: #fff; }
+.make-title .make-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #94a3b8;
+  background: rgba(255,255,255,0.08);
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 .model-title {
-  font-size: 0.88rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
-  color: var(--text); margin: 1rem 0 0.5rem; padding: 0.4rem 0.7rem;
-  background: var(--bg-soft); border-radius: 6px; border-left: 3px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 1rem 0 0.55rem;
+  padding: 0.55rem 0.85rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.model-title .model-label {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.model-title .model-make {
+  color: var(--primary);
+  font-weight: 800;
+}
+.model-title .model-sep {
+  color: #94a3b8;
+  font-weight: 500;
+}
+.model-title .model-name {
+  color: var(--text);
 }
 .model-title .model-count {
-  font-weight: 400; color: var(--muted); font-size: 0.8rem;
-  letter-spacing: 0; text-transform: none;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--primary);
+  background: var(--primary-dim);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+@media (max-width: 720px) {
+  .make-title {
+    top: 52px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+    border-radius: 8px;
+  }
+  .model-title {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.7rem;
+  }
 }
 
 /* Cards */
@@ -2330,14 +2410,24 @@ function renderList() {
   const makes = Object.keys(grouped).sort();
   let html = '';
   makes.forEach(make => {
-    html += `<section class="make-section"><h2 class="make-title">${make}</h2>`;
+    const makeTotal = Object.values(grouped[make]).reduce((n, arr) => n + arr.length, 0);
+    const makeSafe = String(make).replace(/</g,'&lt;');
+    html += `<section class="make-section">
+      <h2 class="make-title">
+        <span class="make-name">${makeSafe}</span>
+        <span class="make-count">${makeTotal} car${makeTotal === 1 ? '' : 's'}</span>
+      </h2>`;
     const models = Object.keys(grouped[make]).sort((a, b) => {
       const ka = naturalModelKey(a), kb = naturalModelKey(b);
       return ka[0]-kb[0] || ka[1]-kb[1] || ka[2].localeCompare(kb[2]);
     });
     models.forEach(model => {
       const cars = grouped[make][model];
-      html += `<h3 class="model-title">${model} <span class="model-count">(${cars.length})</span></h3>`;
+      const modelSafe = String(model).replace(/</g,'&lt;');
+      html += `<h3 class="model-title">
+        <span class="model-label"><span class="model-make">${makeSafe}</span><span class="model-sep">·</span><span class="model-name">${modelSafe}</span></span>
+        <span class="model-count">${cars.length}</span>
+      </h3>`;
       html += `<div class="vehicle-grid">${cars.map(cardHtml).join('')}</div>`;
     });
     html += `</section>`;

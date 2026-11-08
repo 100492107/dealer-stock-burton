@@ -2651,9 +2651,9 @@ function openDetail(id) {
   const onSite = !['Sold','Delivered'].includes(v.category || 'Stock');
   let pentagon = '';
   if (onSite && v.detail_url) {
-    pentagon = `<a class="vd-link" href="${v.detail_url}" target="_blank" rel="noopener">View on Pentagon (Burton listing) ↗</a>`;
+    pentagon = `<a class="vd-link" href="${v.detail_url}" target="_blank" rel="noopener">View on Pentagon ↗</a>`;
   } else {
-    pentagon = `<a class="vd-link" href="https://www.pentagon-group.co.uk/used-cars-in-burton" target="_blank" rel="noopener">Burton used stock on Pentagon ↗</a>`;
+    pentagon = `<a class="vd-link" href="https://www.pentagon-group.co.uk/used-cars-in-burton" target="_blank" rel="noopener">View on Pentagon ↗</a>`;
     if (['Sold','Delivered'].includes(v.category || '')) {
       pentagon += `<span class="vd-muted" style="display:block;margin-top:0.25rem;font-size:0.8rem">Original advert removed (sold / off the site)</span>`;
     }

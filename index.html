@@ -565,12 +565,10 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
   position: sticky;
   top: 52px;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
   padding: 0.55rem 0;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 .mobile-cat-scroll {
   display: flex;
@@ -719,9 +717,9 @@ body.list-view-mode .filters-bar .filter-toggle:first-child { /* photos still ok
     position: sticky; bottom: 0; z-index: 5;
     margin: 0 -0.85rem -0.85rem; padding: 0.75rem 0.85rem;
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-    background: rgba(255,255,255,0.94); backdrop-filter: blur(10px);
+    background: #ffffff;
     border-top: 1px solid var(--border);
-    box-shadow: 0 -4px 16px rgba(15,23,42,0.06);
+    box-shadow: 0 -4px 16px rgba(15,23,42,0.08);
   }
   .vd-actions-mobile .btn { flex: 1; min-height: 46px; font-weight: 600; }
   .vd-notes { background: #fff !important; }
@@ -1242,7 +1240,7 @@ body, button, input, select, textarea {
   gap: 0.75rem;
 }
 .vehicle-card {
-  background: var(--card);
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
@@ -1393,6 +1391,121 @@ body, button, input, select, textarea {
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.82rem;
+}
+
+
+/* —— Mobile solid surfaces + layout polish —— */
+@media (max-width: 720px) {
+  body {
+    background: #eef2f7;
+  }
+  .top-nav {
+    height: 52px;
+    padding: 0 0.75rem;
+  }
+  .mobile-cat-bar {
+    display: block;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .make-title {
+    top: 108px; /* under nav + category strip */
+    z-index: 30;
+    background: #0f172a !important;
+    color: #fff !important;
+    opacity: 1 !important;
+  }
+  .model-title {
+    background: #ffffff !important;
+    opacity: 1 !important;
+    border: 1px solid var(--border);
+  }
+  .vehicle-card,
+  .vehicle-card.no-img {
+    background: #ffffff !important;
+    opacity: 1 !important;
+    border: 1px solid #d5dce8;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+  }
+  .vehicle-card .card-body {
+    background: #ffffff !important;
+  }
+  .vehicle-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem;
+  }
+  .vehicle-card:not(.no-img) {
+    flex-direction: column !important;
+  }
+  .vehicle-card:not(.no-img) .card-img,
+  .vehicle-card:not(.no-img) .card-img-placeholder {
+    width: 100% !important;
+    max-width: none !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: 0 !important;
+  }
+  .container {
+    padding: 0.75rem 0.75rem 2rem;
+  }
+  .filters-bar {
+    background: #ffffff !important;
+    opacity: 1 !important;
+  }
+  .modal,
+  .modal-body,
+  .modal-panel {
+    background: #ffffff !important;
+  }
+  .vd-notes,
+  .vd-note-form textarea,
+  .vd-section,
+  .vd-metrics > *,
+  .detail-panel {
+    background: #ffffff !important;
+    opacity: 1 !important;
+  }
+  .vd-note {
+    background: #f1f5f9 !important;
+  }
+  .vd-actions-mobile {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .overlay {
+    background: rgba(15, 23, 42, 0.55);
+  }
+  .login-card {
+    background: #ffffff !important;
+    opacity: 1 !important;
+  }
+  .page-header h1 { font-size: 1.15rem; }
+  .search-box input {
+    background: #fff !important;
+    min-height: 44px;
+  }
+  .btn, .btn-primary, .btn-secondary {
+    min-height: 44px;
+  }
+  .cat-chip {
+    background: #ffffff !important;
+  }
+  .cat-chip.active {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2a4a73 100%) !important;
+    color: #fff !important;
+  }
+}
+@media (max-width: 420px) {
+  .make-title {
+    font-size: 0.88rem;
+    padding: 0.55rem 0.7rem;
+  }
+  .model-title {
+    font-size: 0.78rem;
+  }
+  .vehicle-card .model { font-size: 0.8rem; }
+  .vehicle-card .price { font-size: 0.85rem; }
 }
 
 </style>
